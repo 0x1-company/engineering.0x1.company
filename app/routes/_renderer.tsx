@@ -34,7 +34,7 @@ export default jsxRenderer(({ children }) => {
         <Link href="/app/style.css" rel="stylesheet" />
         <Script src="/app/client.ts" async />
       </head>
-      <body style={{ backgroundColor: 'rgb(251 249 242 / var(--tw-bg-opacity, 1))' }}>
+      <body>
         <Header />
         <main>
           {children}

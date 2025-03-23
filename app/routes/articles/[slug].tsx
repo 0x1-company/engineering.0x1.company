@@ -22,10 +22,7 @@ export default createRoute(
     const hasLatestArticles = latestArticles.length > 0;
 
     return c.render(
-      <>
-        <title>{slug}</title>
-        <h1 class="text-3xl font-bold">Article: {slug}</h1>
-
+      <div class='container mx-auto px-4'>
         <div class='flex flex-col mb-10 items-center'>
           <h1 class='text-center leading-tight text-3xl mb-0 mt-6 pb-2 font-bold flex justify-center'>
             {pageTitle}
@@ -35,7 +32,7 @@ export default createRoute(
           </time>
         </div>
         <article class='markdown'>{article?.Component({})}</article>
-      </>
+      </div>
     );
   }
 );

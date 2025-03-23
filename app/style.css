@@ -1,1 +1,5 @@
 @import 'tailwindcss' source('../app');
+
+main {
+  background-color: rgb(251, 249, 242);
+}
