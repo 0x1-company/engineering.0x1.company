@@ -63,27 +63,39 @@ Routing is handled by HonoX's file-based routing system in the `app/routes/` dir
 - `_error.tsx`: Error handling page
 - `_renderer.tsx`: Custom renderer for the application
 
-#### Redirects
+#### Redirects and Rewrites
 
-The application supports URL redirects for handling legacy URLs or URL structure changes through two methods:
+The application supports URL redirects and rewrites for handling legacy URLs or URL structure changes through two methods:
 
 1. **Route-based redirects**:
    - Implemented as route files that return a redirect response
    - Each redirect file is named after the source path and uses `c.redirect()` with a 301 status code
 
-2. **Configuration-based redirects**:
-   - Implemented in `vercel.json` using the `redirects` array
-   - Each redirect is defined with `source` and `destination` properties
-   - This approach reduces the number of route files and centralizes redirect management
-   - Example:
+2. **Configuration-based redirects and rewrites**:
+   - Implemented in `vercel.json` using the `redirects` or `rewrites` arrays
+   - Each redirect/rewrite is defined with `source` and `destination` properties
+   - This approach reduces the number of route files and centralizes URL management
+   - Example redirect:
      ```json
      {
        "source": "/tech-stack-of-ios-d6466798ed80",
        "destination": "/articles/tech-stack-of-ios"
      }
      ```
+   - Example rewrite:
+     ```json
+     {
+       "source": "/tech-stack-of-ios-d6466798ed80",
+       "destination": "/articles/tech-stack-of-ios.html"
+     }
+     ```
 
 The configuration-based approach is preferred for maintaining URL compatibility while organizing content under a consistent path structure.
+
+**URL Rewrite Best Practices**:
+- Order specific routes before general patterns (e.g., place `/tech-stack-of-ios-d6466798ed80` before `/articles/:path*`)
+- Include file extensions in destination paths when necessary (e.g., `.html`)
+- Use rewrites instead of redirects when you want to keep the original URL in the browser address bar
 
 ### Content Management
 
