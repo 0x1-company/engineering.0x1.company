@@ -72,7 +72,7 @@ TCAを利用することで、効率的かつ柔軟なアプリ開発が可能�
 
 ブランド毎に細かいUIは異なるものの、すべてのブランドは○○アプリのID交換アプリなのでビジネスロジック部分に関してはほとんどが同じです。
 
-![アプリのスクリーンショット](2025/0323/tech-stack-of-ios/app-screenshots.webp)
+<img src="/assets/2025/0323/tech-stack-of-ios/app-screenshots.webp" alt="アプリのスクリーンショット" />
 
 非常にスモールなチームで開発しているので、3つのブランドそれぞれを独立した別々のアプリとして開発・運営するのは困難です。
 
@@ -110,7 +110,7 @@ TCAを利用することで、効率的かつ柔軟なアプリ開発が可能�
 - TCAでいうところのReducerの集まり
 - すべてのブランドで共通利用する前提でコードを書いています
 
-![パッケージ構成図](2025/0323/tech-stack-of-ios/package-structure.webp)
+<img src="/assets/2025/0323/tech-stack-of-ios/package-structure.webp" alt="パッケージ構成図" />
 
 MatchCoreとはTCAでいうReducerのみを実装したパッケージです。
 
@@ -130,11 +130,11 @@ RecommendationViewのUIはブランドによって多少の差がありますが
 
 MatchCoreには、EnvironmentClientというものが実装されています。 このEnvironmentClientにはブランド毎に異なる設定項目を注入できるようにしています。 例えばウェブサイトのURLや利用規約類、公式SNSアカウントのユーザーネームなどはブランド毎に異なります。これらをswift-dependenciesで注入しています。
 
-![EnvironmentClient実装](2025/0323/tech-stack-of-ios/environment-client.webp)
+<img src="/assets/2025/0323/tech-stack-of-ios/environment-client.webp" alt="EnvironmentClient実装" />
 
 また、コードの中で実装を切り替える必要がある場合があります。 そのさいは、EnvironmentClient.brandを利用することでどのブランドをビルド中なのか把握することが出来ます。
 
-![ブランド切り替え実装](2025/0323/tech-stack-of-ios/brand-switch.webp)
+<img src="/assets/2025/0323/tech-stack-of-ios/brand-switch.webp" alt="ブランド切り替え実装" />
 
 
 
@@ -142,15 +142,15 @@ MatchCoreには、EnvironmentClientというものが実装されています。
 
 ios-monorepoではブランド毎にXcode Workspaceを用意しています。
 
-![Xcode Workspace構成](2025/0323/tech-stack-of-ios/xcode-workspace.webp)
+<img src="/assets/2025/0323/tech-stack-of-ios/xcode-workspace.webp" alt="Xcode Workspace構成" />
 
 異なるプロジェクトに同名のアプリケーションターゲットが存在する場合はスキーマ名が次のようになります。
 
-![スキーマ名](2025/0323/tech-stack-of-ios/schema-name.webp)
+<img src="/assets/2025/0323/tech-stack-of-ios/schema-name.webp" alt="スキーマ名" />
 
 しかし、すべてのApp UI Packageを1つのXcode Workspaceに入れてみるとエラーになりました。異なるSwiftPMに同名のターゲットが存在するのは許されていないようです。
 
-![ターゲット名エラー](2025/0323/tech-stack-of-ios/target-name-error.webp)
+<img src="/assets/2025/0323/tech-stack-of-ios/target-name-error.webp" alt="ターゲット名エラー" />
 
 上記の問題があるため、ios-monorepoではブランド毎にXcode Workspaceを用意してエラーを回避しています。
 
@@ -162,7 +162,7 @@ ios-monorepoではブランド毎にXcode Workspaceを用意しています。
 
 テキストに関してはString Catalogを利用して多言語対応を実現しています。
 
-![String Catalog](2025/0323/tech-stack-of-ios/string-catalog.webp)
+<img src="/assets/2025/0323/tech-stack-of-ios/string-catalog.webp" alt="String Catalog" />
 
 ## GitHub Actions
 
@@ -176,7 +176,7 @@ Buildに関してはそのアプリに関連するソースコードが更新さ
 
 dorny/paths-filterを利用して対象のソースコードが更新された場合のみBuildするようなworkflowを組んでいます。
 
-![GitHub Actions Workflow](2025/0323/tech-stack-of-ios/github-actions.webp)
+<img src="/assets/2025/0323/tech-stack-of-ios/github-actions.webp" alt="GitHub Actions Workflow" />
 
 <ExternalOgp url="https://github.com/0x1-company/ios-monorepo/blob/main/github/workflows/app.yml" />
 
@@ -198,19 +198,19 @@ GitHub Actionsにrelease workflowを組んでいます。
 
 すべてのアプリはバージョンを揃えており、minor or patchを一括で更新できるようにしています。
 
-![リリースワークフロー](2025/0323/tech-stack-of-ios/release-workflow.webp)
+<img src="/assets/2025/0323/tech-stack-of-ios/release-workflow.webp" alt="リリースワークフロー" />
 
 <ExternalOgp url="https://github.com/0x1-company/ios-monorepo/blob/main/github/workflows/release.yml" />
 
 Run workflowを押すとすべてのCFBundleShortVersionStringが更新されたPull Requestの作成、Approve、mergeがすべて自動で行われます。
 
-![バージョン更新PR](2025/0323/tech-stack-of-ios/version-update-pr.webp)
+<img src="/assets/2025/0323/tech-stack-of-ios/version-update-pr.webp" alt="バージョン更新PR" />
 
 <ExternalOgp url="https://github.com/0x1-company/ios-monorepo/pull/1000" />
 
 そしてこのPull Requestがマージされると、自動的に新しいタグがリリースされるようになっています。
 
-![リリースタグ](2025/0323/tech-stack-of-ios/release-tag.webp)
+<img src="/assets/2025/0323/tech-stack-of-ios/release-tag.webp" alt="リリースタグ" />
 
 <ExternalOgp url="https://github.com/0x1-company/ios-monorepo/releases/tag/1.55.0" />
 

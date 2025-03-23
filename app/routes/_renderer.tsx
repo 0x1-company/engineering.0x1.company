@@ -36,8 +36,10 @@ export default jsxRenderer(({ children }) => {
       </head>
       <body>
         <Header />
-        <main>
-          {children}
+        <main class='items-center justify-center flex'>
+          <div class='max-w-[780px] w-screen'>
+            {children}
+          </div>
         </main>
         <Footer />
       </body>
