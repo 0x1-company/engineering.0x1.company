@@ -209,16 +209,82 @@ The project is configured for deployment to Cloudflare Workers:
 
 Based on the content of the articles, the company (0x1) also develops:
 
-1. iOS applications using:
-   - Swift and SwiftUI
-   - The Composable Architecture (TCA)
-   - Multi-module, multi-package architecture
-   - GitHub Actions for CI/CD
+### iOS Applications
 
-2. Multiple brand applications sharing core business logic:
-   - BeMatch
-   - TapMatch
-   - Trinket
+The company develops multiple iOS applications using a monorepo approach that enables efficient development across multiple brands with a small team.
+
+#### Core Technologies
+
+- **Swift and SwiftUI**: Modern UI development with Swift's latest features
+- **The Composable Architecture (TCA)**: For predictable state management and reusable components
+- **Swift Package Manager**: For dependency management and modularization
+- **Multi-module, multi-package architecture**: For code organization and reuse
+- **GitHub Actions**: For CI/CD workflows
+- **Xcode Cloud**: For TestFlight and App Store Connect submissions
+
+#### Multiple Brand Applications
+
+The company currently maintains three brand applications that share core business logic:
+
+- **BeMatch**: BeReal exchange app (https://bematch.jp)
+- **TapMatch**: TapNow exchange app (https://tapmatch.jp)
+- **Trinket**: Locket exchange app (https://trinket.camera)
+
+#### Package Structure
+
+The iOS monorepo contains six Swift packages:
+
+1. **Utility**: Common utility code shared across all packages
+2. **Dependencies**: Implementations using swift-dependencies that can be reused across different products
+3. **BeMatch (App UI Package)**: UI code specific to the BeMatch brand
+4. **TapMatch (App UI Package)**: UI code specific to the TapMatch brand
+5. **Trinket (App UI Package)**: UI code specific to the Trinket brand
+6. **MatchCore**: Contains all business logic (TCA Reducers) shared across all brands
+
+This structure allows the team to:
+- Share business logic across all brands
+- Customize UI for each brand
+- Reuse components efficiently
+- Maintain consistency in core functionality
+
+#### Brand-Specific Implementations
+
+For brand-specific configurations and implementations, the codebase uses:
+
+1. **EnvironmentClient**: Injects brand-specific settings like website URLs, terms of service, and social media accounts
+2. **Brand switching**: Conditional code execution based on the current brand being built
+
+#### Multi Xcode Workspace
+
+The repository uses multiple Xcode workspaces (one per brand) to avoid naming conflicts between targets in different packages. This approach works around limitations in Swift Package Manager that prevent having the same target name in different packages within a single workspace.
+
+#### Localization
+
+The applications support multiple languages including Japanese, English, Korean, French, and Vietnamese using String Catalogs for localization management.
+
+#### CI/CD Pipeline
+
+The CI/CD pipeline is implemented using:
+
+1. **GitHub Actions**:
+   - Build and test workflows that run only when relevant code changes
+   - Uses path filtering to determine which apps need to be rebuilt
+   - Automated version updates across all applications
+
+2. **Xcode Cloud**:
+   - Handles TestFlight and App Store Connect submissions
+   - Simplifies code signing
+   - Triggered by tag releases from GitHub
+
+#### Release Process
+
+The release process is automated through GitHub Actions:
+1. A workflow updates version numbers across all applications
+2. Creates and approves a pull request with these changes
+3. When merged, automatically creates a new release tag
+4. The tag triggers Xcode Cloud to build and archive production versions of the apps
+
+This approach ensures version consistency across all applications and minimizes manual intervention in the release process.
 
 ## Development Practices
 
