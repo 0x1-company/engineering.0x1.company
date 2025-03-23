@@ -1,0 +1,238 @@
+---
+title: "BeMatchのiOS技術スタック"
+description: "ONEのiOSアプリ開発がどのように行われているのかを紹介します。"
+date: "2025-03-23"
+---
+
+本記事で紹介するiOSのソースコードはすべてGitHubに公開しています。
+
+<ExternalOgp url="https://github.com/0x1-company/ios-monorepo" />
+
+
+## Our Brand
+
+現在わたしたちが取り組んでいるブランドは主に3つあります。
+
+BeMatch.
+
+- BeRealの交換アプリ
+- https://bematch.jp
+
+TapMatch
+
+- TapNowの交換アプリ
+- https://tapmatch.jp
+
+Trinket
+
+- Locketの交換アプリ
+- https://trinket.camera
+
+3つのアプリを非常にスモールなチームで開発しています。
+
+さて、これはどのようにすれば実現できるのかを説明します。
+
+
+
+## 技術環境
+
+- Swift, SwiftUI
+- The Composable Architecture
+- Swift PM
+- Multi Module
+- Multi Package
+- Multi Xcode Workspace
+- Renovate, swift-format
+- GitHub Actions, Xcode Cloud
+
+
+
+## The Composable Architecture
+
+アーキテクチャとしてはTCAを選択しました。
+
+ONEでは今までいくつかのソーシャルアプリを作ってきました。 それらの一部はGitHubで公開しています。
+
+<ExternalOgp url="https://github.com/0x1-company/god-ios" />
+<ExternalOgp url="https://github.com/caaaption/caaaption" />
+
+ソーシャルアプリは事業の特性上狙って当たりを出すことが難しいので、如何に多くのプロダクトのリリースするかが勝負だと考えています。 より多くのプロダクトを開発するためには、共通となる機能に関しては開発に労力を割きたくありません。
+
+たとえば強制アップデート、メンテナンスモード、アプリ内のお知らせバナー、通報、通知機能などなど
+
+これらの機能を、画面や機能で再利用可能な形で設計することが理想的であり、この点でTCAは非常にマッチしています。
+
+TCAを利用することで、効率的かつ柔軟なアプリ開発が可能となり、より多くのプロダクトをより早くリリースすることが可能となります。
+
+
+
+## 複数ブランドのアプリ開発
+
+先ほど紹介した通り、わたしたちは現在3つのブランドを開発・運営しています。
+
+ブランド毎に細かいUIは異なるものの、すべてのブランドは○○アプリのID交換アプリなのでビジネスロジック部分に関してはほとんどが同じです。
+
+![アプリのスクリーンショット](2025/0323/tech-stack-of-ios/app-screenshots.webp)
+
+非常にスモールなチームで開発しているので、3つのブランドそれぞれを独立した別々のアプリとして開発・運営するのは困難です。
+
+この問題を解決するために私たちはビジネスロジックを共通化して、UIのみ別々に実装するアプローチを採用しています。
+
+
+
+私たちのリポジトリには、6つのPackage.swiftが存在します。
+
+## Utility
+
+- 主にユーティリティー周りのコードを集約しているパッケージ
+
+## Dependencies
+
+- swift-dependenciesを使ったコード群
+- これらのコードはアプリケーションとは切り離されているので、現在と全く異なるプロダクトを作る際にも利用可能
+- わたしたちはDependenciesのコードを2つ前のプロダクトから繰り返し利用しています
+
+## BeMatch（App UI Package）
+
+- BeMatchのUIのコード
+
+## TapMatch（App UI Package）
+
+- TapMatchのUIのコード
+
+## Trinket（App UI Package）
+
+- TrinketのUIのコード
+
+## MatchCore
+
+- ここにすべてのビジネスロジックを集約しています
+- TCAでいうところのReducerの集まり
+- すべてのブランドで共通利用する前提でコードを書いています
+
+![パッケージ構成図](2025/0323/tech-stack-of-ios/package-structure.webp)
+
+MatchCoreとはTCAでいうReducerのみを実装したパッケージです。
+
+これはすべてのApp UI Packageで共有利用する前提でコードを記述します。
+
+たとえばRecommendationReducerをMatchCoreで実装すると、App UI Packageではそれに対応したRecommendationViewをそれぞれ実装します。
+
+RecommendationViewのUIはブランドによって多少の差がありますが、仕様やロジックに変わりはないのでMatchCoreのRecommendationReducerを参照します。
+
+
+
+## ブランド毎の異なる実装
+
+基本的にはどのブランドでもビジネスロジックは同じといえど、一部のブランドでのみ提供している実装や、ブランド毎に実装をかける必要性は存在します。
+
+そのようなブランド毎に異なる実装をどのようなアプローチで実装しているのかご紹介します。
+
+MatchCoreには、EnvironmentClientというものが実装されています。 このEnvironmentClientにはブランド毎に異なる設定項目を注入できるようにしています。 例えばウェブサイトのURLや利用規約類、公式SNSアカウントのユーザーネームなどはブランド毎に異なります。これらをswift-dependenciesで注入しています。
+
+![EnvironmentClient実装](2025/0323/tech-stack-of-ios/environment-client.webp)
+
+また、コードの中で実装を切り替える必要がある場合があります。 そのさいは、EnvironmentClient.brandを利用することでどのブランドをビルド中なのか把握することが出来ます。
+
+![ブランド切り替え実装](2025/0323/tech-stack-of-ios/brand-switch.webp)
+
+
+
+## Multi Xcode Workspace
+
+ios-monorepoではブランド毎にXcode Workspaceを用意しています。
+
+![Xcode Workspace構成](2025/0323/tech-stack-of-ios/xcode-workspace.webp)
+
+異なるプロジェクトに同名のアプリケーションターゲットが存在する場合はスキーマ名が次のようになります。
+
+![スキーマ名](2025/0323/tech-stack-of-ios/schema-name.webp)
+
+しかし、すべてのApp UI Packageを1つのXcode Workspaceに入れてみるとエラーになりました。異なるSwiftPMに同名のターゲットが存在するのは許されていないようです。
+
+![ターゲット名エラー](2025/0323/tech-stack-of-ios/target-name-error.webp)
+
+上記の問題があるため、ios-monorepoではブランド毎にXcode Workspaceを用意してエラーを回避しています。
+
+
+
+## 多言語対応
+
+日本語,英語,韓国語,フランス語,ベトナム語に対応しています。
+
+テキストに関してはString Catalogを利用して多言語対応を実現しています。
+
+![String Catalog](2025/0323/tech-stack-of-ios/string-catalog.webp)
+
+## GitHub Actions
+
+BuildやLint, FormatはGitHub Actionsで実行しています。 リポジトリを公開しているので全て無料で利用しています。
+
+Buildに関してはそのアプリに関連するソースコードが更新された場合のみ実行するようにしています。
+
+例えばBeMatchのUIに変更があっても、他のアプリには影響がないのでビルドする必要がありません。
+
+逆にMatchCoreに変更がある場合はすべてのアプリに影響するので、すべてのアプリでBuildをする必要があります。
+
+dorny/paths-filterを利用して対象のソースコードが更新された場合のみBuildするようなworkflowを組んでいます。
+
+![GitHub Actions Workflow](2025/0323/tech-stack-of-ios/github-actions.webp)
+
+<ExternalOgp url="https://github.com/0x1-company/ios-monorepo/blob/main/github/workflows/app.yml" />
+
+
+
+## Xcode Cloud
+
+TestFlightやAppStore Connectへの提出にはXcode Cloudを利用しています。
+
+署名周りを考えなくて良いのが採用した主な理由です。
+
+Xcode CloudはworkflowをコードでGitHub管理することができず、コンソールではちまちまする必要があるので、わたしたちのように複数のアプリを管理している場合は非常にめんどうです。この部分が改善されるのを期待しています。
+
+
+
+## リリース
+
+GitHub Actionsにrelease workflowを組んでいます。
+
+すべてのアプリはバージョンを揃えており、minor or patchを一括で更新できるようにしています。
+
+![リリースワークフロー](2025/0323/tech-stack-of-ios/release-workflow.webp)
+
+<ExternalOgp url="https://github.com/0x1-company/ios-monorepo/blob/main/github/workflows/release.yml" />
+
+Run workflowを押すとすべてのCFBundleShortVersionStringが更新されたPull Requestの作成、Approve、mergeがすべて自動で行われます。
+
+![バージョン更新PR](2025/0323/tech-stack-of-ios/version-update-pr.webp)
+
+<ExternalOgp url="https://github.com/0x1-company/ios-monorepo/pull/1000" />
+
+そしてこのPull Requestがマージされると、自動的に新しいタグがリリースされるようになっています。
+
+![リリースタグ](2025/0323/tech-stack-of-ios/release-tag.webp)
+
+<ExternalOgp url="https://github.com/0x1-company/ios-monorepo/releases/tag/1.55.0" />
+
+Xcode Cloudはタグリリースをトリガーとしているので、自動的にアプリ(Production環境版)のアーカイブが開始されるようになっています。
+
+
+
+## 参考
+
+- https://github.com/pointfreeco/isowords
+- https://note.com/wakinchan/n/neb23254e16b3
+- https://www.notion.so/date/isowords-8f8982eb3a9a4665b2fa688b06791b70
+- https://www.notion.so/date/Swift-PM-Build-Configuration-4f14ceac795a4338a5a44748adfeaa40
+
+
+
+## 最後に
+
+ONEのiOSアプリ開発がどのように行われているのかを紹介しました。
+
+BeMatch事業をメインとしつつ新規のブランド・アプリ立ち上げも積極的に行っています。SwiftUIとTCAをフルに使い、ビジネスロジックを共通化するという挑戦を続けています。
+
+このような環境で楽しみながらプロダクト開発をするソフトウェアエンジニアの方を募集中です！
+
+<ExternalOgp url="https://herp.careers/v1/oneinc" />
