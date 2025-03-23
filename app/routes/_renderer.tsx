@@ -1,5 +1,6 @@
 import { jsxRenderer } from 'hono/jsx-renderer'
 import { Link, Script } from 'honox/server'
+import { Footer } from '../components/footer'
 
 export default jsxRenderer(({ children }) => {
   return (
@@ -12,6 +13,7 @@ export default jsxRenderer(({ children }) => {
         <Script src="/app/client.ts" async />
       </head>
       <body>{children}</body>
+      <Footer />
     </html>
   )
 })
