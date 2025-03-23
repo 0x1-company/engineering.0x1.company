@@ -15,7 +15,9 @@ export default jsxRenderer(({ children }) => {
       </head>
       <body>
         <Header />
-        {children}
+        <main>
+          {children}
+        </main>
         <Footer />
       </body>
     </html>
