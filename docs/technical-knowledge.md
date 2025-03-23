@@ -134,8 +134,9 @@ The project includes functionality to:
 
 OGP images are:
 - Stored at `/ogps/[article-entry-name].png` path
-- Displayed as featured images in article cards
-- Styled with responsive design (full-width, fixed height with object-cover)
+- Standard OGP image size of 1200 × 630 pixels (aspect ratio of 1.9:1)
+- Displayed as featured images in article cards with preserved aspect ratio
+- Styled with responsive design using aspect-ratio CSS and absolute positioning
 - Used to improve visual hierarchy and engagement in article listings
 - Include author information from the article's frontmatter
 
@@ -189,6 +190,12 @@ The project employs modern CSS layout techniques:
 - **Utility-First CSS**: TailwindCSS classes are used for styling, promoting consistency and reusability
 - **Minimum Height Strategy**: The body element uses `min-h-screen` to ensure it fills at least the entire viewport height
 - **Flex Grow for Content**: The main content area uses `flex-grow` to expand and fill available space, pushing the footer down
+- **Desktop-Optimized Homepage**: The homepage features a responsive design that enhances the desktop viewing experience:
+  - Hero section with prominent title and description
+  - Featured article section with a side-by-side layout on desktop (stacked on mobile)
+  - Three-column article grid on large screens (adapts to fewer columns on smaller screens)
+  - Visual hierarchy with featured content highlighted at the top
+  - Consistent spacing that increases on larger screens for better readability
 
 ### Data Fetching
 
@@ -298,6 +305,39 @@ The release process is automated through GitHub Actions:
 
 This approach ensures version consistency across all applications and minimizes manual intervention in the release process.
 
+## UI/UX Improvements
+
+### Homepage Desktop Optimization
+
+The homepage has been optimized for desktop viewing with several key improvements:
+
+1. **Enhanced Container**: The main container uses `max-w-screen-xl` to provide a better width constraint on large screens, with increased vertical padding that scales with screen size (`py-8 md:py-12 lg:py-16`).
+
+2. **Hero Section**: A prominent hero section at the top of the page with a large title and descriptive subtitle provides immediate context about the site's purpose.
+
+3. **Featured Article Component**: A dedicated component for the most recent article that:
+   - Uses a side-by-side layout on desktop (image on left, content on right)
+   - Stacks vertically on mobile for better readability
+   - Preserves the OGP image aspect ratio (1200 × 630) using aspect-ratio CSS
+   - Includes a "FEATURED" badge to highlight its importance
+   - Has a prominent "Read More" call-to-action button
+   - Uses a subtle gradient background and enhanced shadow for visual distinction
+
+4. **Improved Article Grid**:
+   - Scales from 1 column on mobile to 2 columns on medium screens and 3 columns on large screens
+   - Includes increased gap spacing on larger screens for better visual separation
+   - Features a "Latest Articles" heading to clearly separate this section
+
+5. **Enhanced Article Cards**:
+   - Proper OGP image aspect ratio (1200 × 630) maintained using aspect-ratio CSS
+   - Added hover effects (slight elevation and scaling) for better interactivity
+   - Image zoom effect on hover for visual feedback
+   - Consistent card heights using flex column layout
+   - Added a "Read Article →" link at the bottom of each card
+   - Subtle border separator between content and call-to-action
+
+These improvements create a more engaging and visually appealing experience for desktop users while maintaining a clean and functional mobile experience.
+
 ## Development Practices
 
 From the project structure and content, we can infer these development practices:
@@ -308,3 +348,5 @@ From the project structure and content, we can infer these development practices
 4. MDX for rich content authoring
 5. Modern build tools (Vite)
 6. Edge deployment (Cloudflare Workers)
+7. Responsive design with mobile-first approach
+8. Progressive enhancement for desktop experiences

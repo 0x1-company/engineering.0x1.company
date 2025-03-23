@@ -183,6 +183,11 @@ export const Footer = () => {
           </SocialIcon>
         </div>
         
+        {/* AI Development Note */}
+        <div className="text-center my-6 text-sm text-gray-500 italic">
+          <p>このサイトのコーディングはAIが98%行っています</p>
+        </div>
+        
         {/* Copyright */}
         <div className="text-right text-sm text-gray-600">
           <p>ONE株式会社 © {year} ONE, Inc.</p>
