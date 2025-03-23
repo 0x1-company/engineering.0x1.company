@@ -2,12 +2,12 @@
   "version": 2,
   "rewrites": [
     {
-      "source": "/articles/:path*",
-      "destination": "/articles/:path*.html"
+      "source": "/tech-stack-of-ios-d6466798ed80",
+      "destination": "/articles/tech-stack-of-ios.html"
     },
     {
-      "source": "/tech-stack-of-ios-d6466798ed80",
-      "destination": "/articles/tech-stack-of-ios"
+      "source": "/articles/:path*",
+      "destination": "/articles/:path*.html"
     }
   ]
 }
