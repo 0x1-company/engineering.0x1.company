@@ -1,36 +1,59 @@
-import { FC } from 'hono/jsx'
+import { fetchOgp } from "../fetchOgp";
 
 type Props = {
-  url: string
-}
+  url: string;
+};
+export const ExternalOgp = async (props: Props) => {
+  const ogp = await fetchOgp(props.url);
 
-export const ExternalOgp: FC<Props> = ({ url }) => {
-  // Extract domain from URL
-  const domain = url.replace(/^https?:\/\//, '').split('/')[0]
-  
+  if (!ogp) return <></>;
+  const host = new URL(props.url).host;
   return (
-    <div class="my-4 border rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-200">
-      <a href={url} target="_blank" rel="noopener noreferrer" class="block p-4">
-        <div class="flex items-center">
-          <div class="mr-2">
-            <img 
-              src={`https://www.google.com/s2/favicons?domain=${domain}&sz=32`} 
-              alt={`Favicon for ${domain}`} 
-              width="16" 
-              height="16" 
-              class="w-4 h-4"
+    <a
+      href={props.url}
+      target="_blank"
+      class={"ogp-link transition-opacity hover:opacity-65"}
+      rel="noreferrer"
+    >
+      <div
+        class={
+          "flex border dark:border-gray-600 rounded-lg  no-underline h-[136px] max-md:h-28 my-4"
+        }
+      >
+        <div class="flex flex-col justify-between px-6 py-4 h-full w-full max-md:px-4">
+          <span class={"font-bold text-ellipsis line-clamp-1 max-md:text-sm"}>
+            {ogp.title}
+          </span>
+          <span
+            class={
+              "text-sm text-ellipsis line-clamp-2 text-gray-500 dark:text-gray-300 max-md:text-xs"
+            }
+          >
+            {ogp.description}
+          </span>
+          <div class="flex gap-2 items-center">
+            {ogp.favicon && (
+              <img
+                src={ogp.favicon}
+                width={16}
+                height={16}
+                alt={`favicon of ${ogp.url}`}
+              />
+            )}
+
+            <span class="text-xs">{host}</span>
+          </div>
+        </div>
+        {ogp.image && (
+          <div class="h-full">
+            <img
+              src={ogp.image}
+              class={"h-full w-fit rounded-r-lg max-w-[32vw] object-cover"}
+              alt={`ogp of ${ogp.image}`}
             />
           </div>
-          <div class="text-sm text-gray-600 dark:text-gray-400 truncate">
-            {domain}
-          </div>
-        </div>
-        <div class="mt-2 font-medium text-blue-600 hover:underline">
-          {url}
-        </div>
-      </a>
-    </div>
-  )
-}
-
-export default ExternalOgp
+        )}
+      </div>
+    </a>
+  );
+};

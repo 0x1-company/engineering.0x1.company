@@ -1,5 +1,7 @@
 import { Fragment, JSX } from 'hono/jsx'
-import ExternalOgp from './mdxComponents/externalOgp'
+import { ExternalOgp } from './mdxComponents/externalOgp'
+import { AnchorLink } from './mdxComponents/anchorLink'
+import { ArticleImage } from './mdxComponents/articleImage'
 
 type ComponentProps<T extends keyof JSX.IntrinsicElements> = JSX.IntrinsicElements[T]
 
@@ -8,13 +10,14 @@ export function useMDXComponents(components: Record<string, any> = {}) {
   return {
     // Custom components
     ExternalOgp,
+    img: ArticleImage,
+    a: AnchorLink,
     // Default components
     h1: (props: ComponentProps<'h1'>) => <h1 class="text-3xl font-bold mt-8 mb-4" {...props} />,
     h2: (props: ComponentProps<'h2'>) => <h2 class="text-2xl font-bold mt-6 mb-3" {...props} />,
     h3: (props: ComponentProps<'h3'>) => <h3 class="text-xl font-bold mt-5 mb-2" {...props} />,
     h4: (props: ComponentProps<'h4'>) => <h4 class="text-lg font-bold mt-4 mb-2" {...props} />,
     p: (props: ComponentProps<'p'>) => <p class="my-4" {...props} />,
-    a: (props: ComponentProps<'a'>) => <a class="text-blue-600 hover:underline" {...props} />,
     ul: (props: ComponentProps<'ul'>) => <ul class="list-disc pl-6 my-4" {...props} />,
     ol: (props: ComponentProps<'ol'>) => <ol class="list-decimal pl-6 my-4" {...props} />,
     li: (props: ComponentProps<'li'>) => <li class="mb-1" {...props} />,
@@ -31,9 +34,6 @@ export function useMDXComponents(components: Record<string, any> = {}) {
     },
     pre: (props: ComponentProps<'pre'>) => (
       <pre class="bg-gray-100 rounded p-4 overflow-x-auto my-4 font-mono text-sm" {...props} />
-    ),
-    img: (props: ComponentProps<'img'>) => (
-      <img class="max-w-full h-auto my-4" {...props} />
     ),
     table: (props: ComponentProps<'table'>) => (
       <div class="overflow-x-auto my-4">
