@@ -1,6 +1,6 @@
 import type { JSX } from "hono/jsx/jsx-runtime";
 import type { MDXProps } from "mdx/types";
-import { Frontmatter } from '../types'
+import { Article, Frontmatter } from '../types'
 import { getEntryNameFromPath } from '../utils';
 
 type MDX = {
@@ -24,13 +24,14 @@ const sortByDateDesc = (): | ((
 };
 
 export const getArticles = () => {
-  const postsData = Object.entries(articles)
+  const postsData: Article[] = Object.entries(articles)
     .sort(sortByDateDesc())
     .map(([path, article]) => {
       const entryName = getEntryNameFromPath(path);
       const { frontmatter } = article;
       const { default: Component } = article;
-      return { entryName, frontmatter, Component };
+      const res: Article = { entryName, frontmatter, Component };
+      return res;
     });
   return postsData;
 };
