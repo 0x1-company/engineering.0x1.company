@@ -27,30 +27,21 @@ export default jsxRenderer(({ children }) => {
         <meta name="description" content={description} />
         <meta name="theme-color" content="#000000" />
         <meta name="robots" content="indexfollow" />
-        {import.meta.env.VITE_ENV === "production" ? (
-          <>
-            <meta
-              property="og:url"
-              content={`https://engineering.0x1.company${ogpPath}`}
-            />
-            <meta
-              property="og:image"
-              content={`https://engineering.0x1.company${ogpPath}`}
-            />
-            <meta
-              name="twitter:image"
-              content={`https://engineering.0x1.company${ogpPath}`}
-            />
-            <link rel="icon" href="https://engineering.0x1.company/favicon.ico" />
-          </>
-        ) : (
-          <>
-            <meta property="og:url" content={ogpPath} />
-            <meta property="og:image" content={ogpPath} />
-            <meta name="twitter:image" content={ogpPath} />
-            <link rel="icon" href="/favicon.ico" />
-          </>
-        )}
+        <>
+          <meta
+            property="og:url"
+            content={`https://engineering.0x1.company${ogpPath}`}
+          />
+          <meta
+            property="og:image"
+            content={`https://engineering.0x1.company${ogpPath}`}
+          />
+          <meta
+            name="twitter:image"
+            content={`https://engineering.0x1.company${ogpPath}`}
+          />
+          <link rel="icon" href="https://engineering.0x1.company/favicon.ico" />
+        </>
         
         {/* Open Graph / Facebook */}
         <meta property="og:title" content="ONE Engineering" />
