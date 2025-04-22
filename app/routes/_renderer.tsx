@@ -27,36 +27,20 @@ export default jsxRenderer(({ children }) => {
         <meta name="description" content={description} />
         <meta name="theme-color" content="#000000" />
         <meta name="robots" content="indexfollow" />
-        <>
-          <meta
-            property="og:url"
-            content={`https://engineering.0x1.company${ogpPath}`}
-          />
-          <meta
-            property="og:image"
-            content={`https://engineering.0x1.company${ogpPath}`}
-          />
-          <meta
-            name="twitter:image"
-            content={`https://engineering.0x1.company${ogpPath}`}
-          />
-          <link rel="icon" href="https://engineering.0x1.company/favicon.ico" />
-        </>
-        
-        {/* Open Graph / Facebook */}
-        <meta property="og:title" content="ONE Engineering" />
-        <meta property="og:description" content="ONE Inc." />
-        <meta property="og:url" content="https://engineering.0x1.company/" />
-        <meta property="og:image" content="https://engineering.0x1.company/favicon.ico" />
+        <link rel="icon" href="https://engineering.0x1.company/favicon.ico" />
+
+        {/* Open Graph */}
+        <meta property="og:title" content={title} />
+        <meta property="og:description" content={description} />
         <meta property="og:type" content="website" />
         <meta property="og:site_name" content="ONE Engineering" />
-        
+        <meta property="og:url" content={`https://engineering.0x1.company${ogpPath}`} />
+        <meta property="og:image" content={`https://engineering.0x1.company${ogpPath}`} />
+        <meta name="twitter:image" content={`https://engineering.0x1.company${ogpPath}`} />        
         {/* Twitter */}
-        <meta name="twitter:title" content="ONE Engineering" />
-        <meta name="twitter:description" content="ONE Inc." />
-        <meta name="twitter:image" content="https://engineering.0x1.company/favicon.ico" />
+        <meta name="twitter:title" content={title} />
+        <meta name="twitter:description" content={description} />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:site" content="@0x1company" />
         
         <Link href="/app/style.css" rel="stylesheet" />
         <Script src="/app/client.ts" async />
