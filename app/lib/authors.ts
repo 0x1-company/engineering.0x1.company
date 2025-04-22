@@ -10,7 +10,7 @@ type Authors = {
 export const authors: Authors = {
   tomokisun: {
     name: 'tomokisun',
-    icon: 'https://pbs.twimg.com/profile_images/1660378428145807360/6tw_dYvx_400x400.png',
+    icon: 'https://engineering.0x1.company/tomokisun.png',
   },
   // Add more authors as needed
 };
