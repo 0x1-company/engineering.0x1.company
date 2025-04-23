@@ -48,7 +48,7 @@ export default jsxRenderer(({ children }) => {
       <body class="flex flex-col min-h-screen">
         <Header />
         <main class='items-center justify-center flex flex-grow'>
-          <div class='max-w-[780px] w-screen'>
+          <div class='w-screen'>
             {children}
           </div>
         </main>

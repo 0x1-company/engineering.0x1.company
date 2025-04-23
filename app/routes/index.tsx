@@ -2,11 +2,9 @@ import { createRoute } from 'honox/factory'
 import { getArticles } from '../lib/articles'
 import { ArticleList } from '../components/ArticleList'
 import { HomeContainer } from '../components/HomeContainer'
-import { FeaturedArticle } from '../components/FeaturedArticle'
 
 export default createRoute((c) => {
   const articles = getArticles()
-  const featuredArticle = articles[0]
 
   return c.render(
     <HomeContainer>
@@ -21,11 +19,7 @@ export default createRoute((c) => {
           </p>
         </div>
         
-        {/* Featured Article */}
-        <FeaturedArticle article={featuredArticle} />
-        
-        {/* Article List */}
-        <ArticleList articles={articles} featured={true} />
+        <ArticleList articles={articles} />
       </div>
     </HomeContainer>
   )

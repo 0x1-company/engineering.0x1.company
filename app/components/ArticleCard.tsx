@@ -9,7 +9,7 @@ export function ArticleCard({ article }: ArticleCardProps) {
   const ogpPath = `/ogps/${article.entryName}.png`;
 
   return (
-    <article className="bg-white border border-gray-100 hover:border-gray-200 overflow-hidden transition-all duration-300 h-full flex flex-col">
+    <article className="bg-white border border-gray-100 hover:border-gray-200 rounded-xl overflow-hidden transition-all duration-300 h-full flex flex-col">
       <a href={`/articles/${article.entryName}`} className="block h-full flex flex-col">
         <div className="w-full overflow-hidden">
           <div className="aspect-[1200/630] relative">
