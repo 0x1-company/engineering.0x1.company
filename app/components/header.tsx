@@ -29,7 +29,7 @@ export const Header = () => {
         <div className="h-16 flex items-center">
           <ul className="flex justify-between items-center w-full">
             <NavLink href="/">
-              <p class='font-bold'>Engineering Blog</p>
+              <p class='font-bold'>ONE Engineering</p>
             </NavLink>
             <NavLink href="https://herp.careers/v1/oneinc" isExternal>
               <p>採用情報</p>

@@ -15,7 +15,7 @@ export default jsxRenderer(({ children }) => {
 
   const title = article?.frontmatter.title
   const pageTitle = title ? `${title} - ONE Engineering` : 'ONE Engineering';
-  const description = article?.frontmatter.description ?? 'ONE, Inc.';
+  const description = article?.frontmatter.description ?? 'ONE株式会社のプロダクト開発のブログです。';
   const ogpPath = entryName ? `/ogps/${entryName}.png` : "/ogp.png";
 
   return (
