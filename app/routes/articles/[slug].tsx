@@ -3,6 +3,7 @@ import { getArticleByEntryName, getArticles, getLatestArticlesWithoutTargetArtic
 import { formattedDate } from '../../lib/date';
 import { NotFound } from '../../components/not-found';
 import { ssgParams } from 'hono/ssg';
+import { ArticleList } from '../../components/ArticleList';
 
 export default createRoute(
   ssgParams(() => {
@@ -14,6 +15,7 @@ export default createRoute(
   async (c) => {
     const slug = c.req.param('slug');
     const article = getArticleByEntryName(slug);
+    const latestArticles = getLatestArticlesWithoutTargetArticle(slug);
 
     if (!article) {
       c.status(404);
@@ -38,11 +40,21 @@ export default createRoute(
           </time>
         </div>
 
-        <img src={`https://engineering.0x1.company${ogpPath}`} />
+        <div className="w-full overflow-hidden">
+          <div className="aspect-[1200/630] relative">
+            <img 
+              alt={article.frontmatter.title} 
+              src={`https://engineering.0x1.company${ogpPath}`}
+              className="w-full h-full object-cover absolute inset-0 transition-transform duration-500 hover:scale-105"
+            />
+          </div>
+        </div>
 
         <article class='markdown mt-10 mb-10'>
           {article?.Component({})}
         </article>
+
+        <ArticleList articles={latestArticles} />
       </div>
     );
   }

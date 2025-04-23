@@ -2,7 +2,6 @@ import { jsxRenderer, useRequestContext } from 'hono/jsx-renderer'
 import { Link, Script } from 'honox/server'
 import { Footer } from '../components/footer'
 import { Header } from '../components/header'
-import { getEntryNameFromPath } from '../utils'
 import { getArticleByEntryName } from '../lib/articles'
 
 export default jsxRenderer(({ children }) => {
@@ -10,7 +9,6 @@ export default jsxRenderer(({ children }) => {
   const pagePath = c.req.path;
   const paths = pagePath.split('/');
   const entryName = paths[paths.length - 1];
-  // const entryName = getEntryNameFromPath(pagePath);
   const article = getArticleByEntryName(entryName);
 
   const title = article?.frontmatter.title

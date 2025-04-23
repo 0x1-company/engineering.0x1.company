@@ -43,6 +43,6 @@ export const getArticleByEntryName = (entryName: string) => {
 
 export const getLatestArticlesWithoutTargetArticle = (entryName: string) => {
   const posts = getArticles();
-  return posts.filter((post) => post.entryName !== entryName).slice(0, 3);
+  return posts.filter((post) => post.entryName !== entryName).slice(0, 4);
 }
 
