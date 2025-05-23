@@ -1,82 +1,82 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+このファイルは、Claude Code (claude.ai/code) がこのリポジトリのコードを扱う際のガイダンスを提供します。
 
-## Build Commands
+## ビルドコマンド
 
 ```bash
-# Development server with hot reload
+# ホットリロード付き開発サーバー
 bun dev
 
-# Build for production (client and SSG)
+# 本番用ビルド（クライアントとSSG）
 bun run build
 
-# Type checking
+# 型チェック
 bunx tsc --noEmit
 ```
 
-## Project Architecture
+## プロジェクトアーキテクチャ
 
-This is a HonoX-based engineering blog built with TypeScript, MDX, and Vite. It uses Static Site Generation (SSG) for performance and SEO.
+このプロジェクトは、TypeScript、MDX、Viteで構築されたHonoXベースのエンジニアリングブログです。パフォーマンスとSEOのために静的サイト生成（SSG）を使用しています。
 
-### Key Technologies
-- **HonoX**: Full-stack framework built on Hono + Vite
-- **MDX**: For rich content authoring with JSX components
-- **TailwindCSS v4**: For styling
-- **Vite**: Build tool with SSG capabilities
-- **TypeScript**: Full type safety across the codebase
+### 主要技術
+- **HonoX**: Hono + Viteで構築されたフルスタックフレームワーク
+- **MDX**: JSXコンポーネントを含むリッチなコンテンツ作成
+- **TailwindCSS v4**: スタイリング用
+- **Vite**: SSG機能を備えたビルドツール
+- **TypeScript**: コードベース全体の完全な型安全性
 
-### Directory Structure
-- `app/articles/`: MDX content organized by date (YYYY/MMDD format)
-- `app/assets/`: Static assets for articles
-- `app/components/`: Reusable UI components (ArticleCard, ArticleList, etc.)
-- `app/routes/`: File-based routing system
-  - `index.tsx`: Homepage with article listing
-  - `articles/[slug].tsx`: Individual article pages
-  - `ogps/[slug].tsx`: OGP image generation
-- `app/lib/`: Utilities and MDX component providers
-- `app/types/`: TypeScript type definitions
+### ディレクトリ構造
+- `app/articles/`: 日付（YYYY/MMDD形式）で整理されたMDXコンテンツ
+- `app/assets/`: 記事用の静的アセット
+- `app/components/`: 再利用可能なUIコンポーネント（ArticleCard、ArticleListなど）
+- `app/routes/`: ファイルベースのルーティングシステム
+  - `index.tsx`: 記事一覧のホームページ
+  - `articles/[slug].tsx`: 個別の記事ページ
+  - `ogps/[slug].tsx`: OGP画像生成
+- `app/lib/`: ユーティリティとMDXコンポーネントプロバイダー
+- `app/types/`: TypeScript型定義
 
-### Content Management
-Articles are MDX files in `app/articles/YYYY/MMDD/filename.mdx` with frontmatter:
+### コンテンツ管理
+記事は`app/articles/YYYY/MMDD/filename.mdx`にあるMDXファイルで、フロントマターを含みます：
 ```mdx
 ---
-title: "Article Title"
-description: "Brief description"
+title: "記事タイトル"
+description: "簡潔な説明"
 date: "YYYY-MM-DD"
 author: "author-id"
 ---
 ```
 
-### URL Management
-Legacy URLs are handled via `vercel.json` rewrites. When adding new rewrites:
-1. Place specific routes before general patterns
-2. Include file extensions in destinations when needed
-3. Use rewrites (not redirects) to preserve original URLs
+### URL管理
+レガシーURLは`vercel.json`のrewritesで処理されます。新しいrewritesを追加する際：
+1. 特定のルートを一般的なパターンより前に配置
+2. 必要に応じて宛先にファイル拡張子を含める
+3. 元のURLを保持するためにrewritesを使用（redirectsではなく）
 
-### MDX Components
-The MDX components provider (`app/lib/mdx-components.tsx`) must export the function directly:
+### MDXコンポーネント
+MDXコンポーネントプロバイダー（`app/lib/mdx-components.tsx`）は関数を直接エクスポートする必要があります：
 ```typescript
-export default useMDXComponents  // Correct
-// NOT: export default { useMDXComponents }
+export default useMDXComponents  // 正しい
+// 誤り: export default { useMDXComponents }
 ```
 
-Custom components available in MDX:
-- `<ExternalOgp url="...">`: Rich link previews
-- `<img>`: Auto-styled images with proper alt text
+MDXで利用可能なカスタムコンポーネント：
+- `<ExternalOgp url="...">`: リッチリンクプレビュー
+- `<img>`: 適切なalt textを含む自動スタイル付き画像
 
-### Testing
-No automated tests are currently configured. Manual testing via development server is the primary method.
+### テスト
+現在、自動化されたテストは設定されていません。開発サーバーを介した手動テストが主な方法です。
 
-### Deployment
-The site is deployed to Cloudflare Workers/Pages. Build outputs to `./dist` directory.
+### デプロイメント
+サイトはCloudflare Workers/Pagesにデプロイされます。ビルド出力は`./dist`ディレクトリです。
 
-## Writing Guidelines
+## ライティングガイドライン
 
-Articles should follow these conventions:
-- Primary language: Japanese
-- Use "わたしたち" for first-person plural
-- Technical terms remain in English (Swift, TCA, etc.)
-- Include descriptive alt text for all images
-- Use `<ExternalOgp>` for external links when appropriate
-- Images stored in `/app/assets/YYYY/MMDD/article-name/`
+記事は以下の規約に従う必要があります：
+- 主要言語：日本語
+- 一人称複数形には「わたしたち」を使用
+- 技術用語は英語のまま（Swift、TCAなど）
+- すべての画像に説明的なalt textを含める
+- 適切な場合は外部リンクに`<ExternalOgp>`を使用
+- 画像は`/app/assets/YYYY/MMDD/article-name/`に保存
