@@ -3,7 +3,8 @@
   "type": "module",
   "scripts": {
     "dev": "next dev",
-    "build": "bun run generate:ogp && next build",
+    "build": "bun run copy:assets && bun run generate:ogp && next build",
+    "copy:assets": "bun scripts/copyAssets.ts",
     "start": "next start",
     "lint": "next lint",
     "generate:ogp": "bun scripts/generateOgpImages.ts && bun scripts/generateDefaultOgp.ts"

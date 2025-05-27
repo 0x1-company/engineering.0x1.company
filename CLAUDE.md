@@ -63,14 +63,9 @@ bunx tsc --noEmit
 │   ├── layout.tsx               # ルートレイアウト
 │   ├── page.tsx                 # ホームページ
 │   ├── global.css               # グローバルスタイル
-│   ├── articles/                # 記事コンテンツ
-│   │   ├── [slug]/              # 動的記事ルート
-│   │   │   └── page.tsx         # 記事詳細ページ
-│   │   └── YYYY/                # 年ごとのフォルダ
-│   │       └── MMDD/            # 月日ごとのフォルダ
-│   │           └── *.mdx        # MDX記事ファイル
-│   ├── assets/                  # 記事用静的アセット
-│   │   └── YYYY/MMDD/article-name/  # 記事ごとの画像フォルダ
+│   ├── articles/                # 記事ルーティング
+│   │   └── [slug]/              # 動的記事ルート
+│   │       └── page.tsx         # 記事詳細ページ
 │   ├── components/              # UIコンポーネント（Atomic Design）
 │   │   ├── atoms/               # 基本要素
 │   │   │   ├── Button.tsx
@@ -118,6 +113,12 @@ bunx tsc --noEmit
 │   │   └── index.ts
 │   └── utils/                   # 汎用ユーティリティ
 │       └── getEntryNameFromPath/
+├── articles/                    # MDX記事ファイル（ルートレベル）
+│   └── YYYY/                    # 年ごとのフォルダ
+│       └── MMDD/                # 月日ごとのフォルダ
+│           └── *.mdx            # MDX記事ファイル
+├── assets/                      # 記事用静的アセット（ルートレベル）
+│   └── YYYY/MMDD/article-name/  # 記事ごとの画像フォルダ
 ├── public/                      # 静的ファイル
 │   ├── favicon.ico
 │   ├── tomokisun.png           # 著者アバター
@@ -139,7 +140,7 @@ bunx tsc --noEmit
 ### コンテンツ管理
 
 #### 記事ファイル
-記事は`app/articles/YYYY/MMDD/filename.mdx`にあるMDXファイルで、フロントマターを含みます：
+記事は`articles/YYYY/MMDD/filename.mdx`にあるMDXファイルで、フロントマターを含みます：
 
 ```mdx
 ---
@@ -151,7 +152,7 @@ author: "author-id"
 ```
 
 #### URLスラッグ生成
-- ファイルパス: `app/articles/2025/0127/my-article.mdx`
+- ファイルパス: `articles/2025/0127/my-article.mdx`
 - 生成されるURL: `/articles/my-article`
 - スラッグはファイル名から自動生成（拡張子除く）
 
@@ -202,7 +203,7 @@ MDXで利用可能なカスタムコンポーネント：
 - 技術用語は英語のまま（Swift、TCAなど）
 - すべての画像に説明的なalt textを含める
 - 適切な場合は外部リンクに`<ExternalOgp>`を使用
-- 画像は`/app/assets/YYYY/MMDD/article-name/`に保存
+- 画像は`/assets/YYYY/MMDD/article-name/`に保存
 
 ## コンポーネント開発ガイドライン
 
@@ -247,8 +248,8 @@ MDXで利用可能なカスタムコンポーネント：
    - 新規コンポーネントは適切な階層に作成
 
 2. **記事追加時**
-   - `app/articles/YYYY/MMDD/`にMDXファイルを作成
-   - 画像は`app/assets/YYYY/MMDD/article-name/`に配置
+   - `articles/YYYY/MMDD/`にMDXファイルを作成
+   - 画像は`assets/YYYY/MMDD/article-name/`に配置
    - フロントマターを正しく設定
 
 3. **ビルド前チェック**

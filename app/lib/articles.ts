@@ -5,7 +5,7 @@ import { Article, Frontmatter } from '../types'
 import { getEntryNameFromPath } from '../utils';
 
 const getArticleFiles = () => {
-  const articlesDirectory = path.join(process.cwd(), 'app/articles');
+  const articlesDirectory = path.join(process.cwd(), 'articles');
   
   const getAllMdxFiles = (dir: string): string[] => {
     const files: string[] = [];

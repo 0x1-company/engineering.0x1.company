@@ -1,0 +1,217 @@
+---
+title: "CloudRun Jobを使ったDBマイグレーション"
+description: "CloudRun Jobを使って安全にDBをマイグレーションする仕組みを導入しました"
+date: "2025-04-22"
+author: tomokisun
+---
+
+## はじめに
+
+NewMatchのバックエンドシステムではCloudRunを使用しています。サービスのデプロイ時には、データベースマイグレーションを安全に実行する必要がありますが、これにはいくつかの課題がありました。本記事では、CloudRun Jobsを活用してデータベースマイグレーションを安全かつ効率的に行う方法について紹介します。
+
+特に以下のようなエラーが発生することがありました：
+
+```
+STARTUP HTTP probe failed 5 times consecutively for container "app-1" on path "/health". The instance was not started.
+Connection failed with status ERROR_CONNECTION_FAILED.
+```
+
+これは、新しいリビジョンがデプロイされた際に、アプリケーションの起動前にデータベースマイグレーションが必要だったにも関わらず、起動時のヘルスチェックが失敗してしまうという問題です。マイグレーションを適用していないデータベースに対して新しいコードが動作しようとして失敗するケースでした。この問題を解決するために、CloudRun Jobsを使ったマイグレーション実行フローを導入しました。
+
+## Cloud Run Jobsとは
+
+Cloud Run Jobsは、一度実行して完了するタスクをサーバーレス環境で実行するためのサービスです。Webサーバーのように常時稼働する必要がないバッチ処理やマイグレーションなどのタスクに最適です。
+
+従来のCloud Runサービスとの主な違いは、常時リクエストを待ち受けるプロセスである必要がなく、タスクが完了すると終了することです。これにより、データベースマイグレーションのような一時的なタスクを効率的に実行できます。
+
+## マイグレーション用Cloud Run Jobの実装
+
+まず、Terraformを使用してCloud Run Jobを定義しました：
+
+```tsx
+resource "google_cloud_run_v2_job" "migrate" {
+  name                = "app-migrate"
+  location            = local.region
+  deletion_protection = false
+
+  template {
+    template {
+      containers {
+        image = "asia-northeast1-docker.pkg.dev/${local.project_id}/cloud-run-source-deploy/app:latest"
+
+        command = ["pnpm"]
+        args    = ["run", "cloudrun:migration:run"]
+
+        env {
+          name  = "NODE_ENV"
+          value = "staging"
+        }
+
+        # データベース接続情報の設定
+        env {
+          name  = "DATABASE_HOST"
+          value = google_sql_database_instance.newmatch_db.private_ip_address
+        }
+        
+        # その他の環境変数...
+
+        resources {
+          limits = {
+            cpu    = "1000m"
+            memory = "512Mi"
+          }
+        }
+      }
+
+      timeout     = "900s"
+      max_retries = 1
+
+      service_account = google_service_account.cloudrun_app.email
+
+      vpc_access {
+        connector = google_vpc_access_connector.vpc_connector[local.region].id
+        egress    = "PRIVATE_RANGES_ONLY"
+      }
+    }
+  }
+}
+```
+
+このJobの設定のポイントは以下の通りです：
+
+1. **同一コンテナの使用** - アプリケーションと同じコンテナイメージを使用
+2. **マイグレーション専用コマンド** - package.jsonに定義した`cloudrun:migration:run`コマンドを実行
+3. **タイムアウト** - 長時間実行可能な900秒の設定
+4. **リソース制限** - 適切なCPUとメモリの割り当て
+5. **VPCアクセス** - プライベートネットワーク内のデータベースにアクセス
+
+## package.jsonへのマイグレーションコマンド追加
+
+TypeORMを使用したマイグレーション実行用のコマンドをpackage.jsonに追加しました：
+
+```json
+{
+  "scripts": {
+    // 既存のコマンド...
+    "cloudrun:migration:run": "typeorm-ts-node-commonjs migration:run -d ./src/database/data-source.ts",
+    "cloudrun:migration:revert": "typeorm-ts-node-commonjs migration:revert -d ./src/database/data-source.ts"
+  }
+}
+```
+
+これらのコマンドはTypeORMのCLIを使用して、データソース設定に基づいてマイグレーションを実行します。
+
+## デプロイフローへの統合
+
+GitHubActionsのワークフローを以下のように構成しました：
+
+1. **新リビジョンのデプロイ** - トラフィックを移行せずに新バージョンをデプロイ
+2. **データベースマイグレーション** - Cloud Run Jobsを実行
+3. **トラフィック移行** - マイグレーション成功後に新バージョンへトラフィックを移行
+
+```yaml
+jobs:
+  # 新しいリビジョンをデプロイするが、トラフィックは移行しない
+  deploy-revision:
+    # 設定略...
+
+  # データベースマイグレーションはデプロイ後に実行
+  db-migration:
+    runs-on: ubuntu-latest
+    needs: [deploy-revision, prepare-deploy]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Authenticate GCP # 省略
+      - name: Run Database Migration
+        run: sh .github/scripts/migrate.sh
+        env:
+          PROJECT_ID: ${{ needs.prepare-deploy.outputs.project }}
+          REGION: ${{ env.GCP_REGION }}
+          ENVIRONMENT: ${{ needs.prepare-deploy.outputs.environment }}
+
+  # マイグレーション完了後にトラフィックを移行
+  traffic-migration:
+    runs-on: ubuntu-latest
+    needs: [deploy-revision, db-migration, prepare-deploy]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Authenticate GCP # 省略
+      - name: Migrate traffic to latest revision
+        run: |
+          gcloud run services update-traffic ${{ matrix.app }} \
+            --region=${{ matrix.region }} \
+            --to-latest \
+            --project=${{ needs.prepare-deploy.outputs.project }}
+    # 設定略...
+```
+
+## マイグレーションスクリプトの実装
+
+マイグレーション実行のためのシェルスクリプト（migrate.sh）を作成しました：
+
+```bash
+#!/bin/bash
+# GitHub Actions内でCloud Run Jobを使用したマイグレーション実行スクリプト
+
+set -e
+
+# 環境変数確認
+if [ -z "$PROJECT_ID" ] || [ -z "$REGION" ]; then
+  echo "エラー: 必要な環境変数(PROJECT_ID, REGION)が設定されていません"
+  exit 1
+fi
+
+# 環境パラメータのデフォルト値
+ENVIRONMENT=${ENVIRONMENT:-production}
+echo "対象環境: $ENVIRONMENT"
+
+JOB_NAME="app-migrate"
+
+# マイグレーションジョブが存在するか確認
+if ! gcloud run jobs describe $JOB_NAME --region=$REGION --project=$PROJECT_ID; then
+  echo "エラー: マイグレーションジョブ「$JOB_NAME」が存在しません。Terraformで作成されていることを確認してください。"
+  exit 1
+fi
+
+# マイグレーションの実行
+echo "マイグレーションを実行します..."
+gcloud run jobs execute $JOB_NAME \
+  --region=$REGION \
+  --project=$PROJECT_ID \
+  --wait
+
+echo "マイグレーションが完了しました"
+```
+
+このスクリプトの重要なポイント：
+
+1. **環境変数の検証** - 必要なパラメータが設定されているか確認
+2. **ジョブの存在確認** - 実行前にJobが存在するか確認
+3. **--wait フラグ** - マイグレーションの完了を待機し、失敗時はエラーコードを返す
+
+## ゼロダウンタイムデプロイの実現
+
+この実装により、以下のようなゼロダウンタイムデプロイフローを実現しました：
+
+1. 新しいリビジョンをデプロイ（トラフィックは古いバージョンのまま）
+2. データベースマイグレーションを実行
+3. マイグレーション成功後、新リビジョンにトラフィックを移行
+
+この方法には以下のメリットがあります：
+
+- **安全性**: マイグレーションが失敗した場合、トラフィックは古いバージョンのままなのでサービスは継続して利用可能
+- **可視性**: Cloud Run Jobsのログでマイグレーション実行状況を確認可能
+- **一貫性**: 環境間（ステージングと本番）で同じデプロイフローを使用
+- **権限管理**: マイグレーション用のサービスアカウントを適切に設定可能
+
+## まとめ
+
+Cloud Run Jobsを活用したデータベースマイグレーション実行フローを導入することで、以下のメリットが得られました：
+
+1. **安全性の向上** - マイグレーション失敗時にユーザーへの影響を最小限に抑制
+2. **デプロイの自動化** - GitHub Actionsとの統合により完全自動化されたデプロイフロー
+3. **一貫性の確保** - すべての環境で同一の手順でマイグレーションを実行
+4. **運用オーバーヘッドの削減** - マイグレーション実行のための特別な手続きが不要
+
+この仕組みにより、NewMatchのデプロイにおける信頼性とセキュリティが大幅に向上しました。Cloud Run Jobsはこのようなタスクに最適なソリューションであり、他のプロジェクトでも同様のアプローチを検討する価値があります。
+
