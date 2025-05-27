@@ -1,292 +1,212 @@
-# リファクタリング計画
-
-このドキュメントは、0x1 Companyエンジニアリングブログのコードベースに対する包括的なリファクタリング計画を示します。
-
-## 概要
-
-現在のコードベースは機能していますが、保守性、拡張性、パフォーマンスの観点から改善の余地があります。このリファクタリング計画は、段階的に実施可能な改善案を優先度順に整理しています。
-
-## 1. コンポーネント構造の改善
-
-### 現状の課題
-- コンポーネントのプロップ型定義が不完全
-- 責任の分離が不明確
-- 再利用性が低い
-
-### 改善案
-
-#### 1.1 ArticleCard.tsxの改善
-```typescript
-// Before
-export default function ArticleCard({ article, className }: ArticleCardProps)
-
-// After
-export interface ArticleCardProps {
-  article: Article;
-  className?: string;
-  onClick?: () => void;
-  priority?: 'high' | 'low'; // 画像の遅延読み込み制御
-}
-```
-
-#### 1.2 コンポーネントの責任分離
-- `ArticleCard`: 表示専用コンポーネント
-- `ArticleListItem`: リスト内での振る舞いを管理
-- `ArticlePreview`: プレビュー表示用
-
-### 実装優先度: 高
-
-## 2. 型定義の強化
-
-### 現状の課題
-- 一部の型定義が不完全
-- 型の再利用が不十分
-- 実行時エラーのリスク
-
-### 改善案
-
-#### 2.1 記事型の拡張
-```typescript
-// app/types/article.ts
-export interface Article {
-  slug: string;
-  frontmatter: Frontmatter;
-  readingTime?: number; // 新規追加
-  relatedArticles?: string[]; // 新規追加
-  lastModified?: string; // 新規追加
-}
-
-// フロントマターのバリデーション
-export const validateFrontmatter = (data: unknown): Frontmatter => {
-  // Zodなどを使用した実行時バリデーション
-};
-```
-
-#### 2.2 ユーティリティ型の追加
-```typescript
-// app/types/utils.ts
-export type DeepReadonly<T> = {
-  readonly [P in keyof T]: DeepReadonly<T[P]>;
-};
-
-export type Nullable<T> = T | null;
-export type Optional<T> = T | undefined;
-```
-
-### 実装優先度: 高
-
-## 3. パフォーマンス最適化
-
-### 現状の課題
-- 全記事を常にメモリに読み込んでいる
-- 画像の最適化が不十分
-- バンドルサイズの最適化余地
-
-### 改善案
-
-#### 3.1 記事の遅延読み込み
-```typescript
-// app/lib/articles.ts
-export async function getArticlesByPage(page: number, limit: number = 10) {
-  const articles = await getAllArticles();
-  const start = (page - 1) * limit;
-  const end = start + limit;
-  return articles.slice(start, end);
-}
-
-// キャッシュ戦略の実装
-const articleCache = new Map<string, Article>();
-```
-
-#### 3.2 画像最適化
-- WebP形式への自動変換
-- レスポンシブ画像の生成
-- 遅延読み込みの実装
-
-#### 3.3 コード分割
-```typescript
-// 動的インポートの活用
-const ArticleEditor = lazy(() => import('./components/ArticleEditor'));
-```
-
-### 実装優先度: 中
-
-## 4. エラーハンドリングの改善
-
-### 現状の課題
-- エラーハンドリングが不統一
-- ユーザーフレンドリーでないエラーメッセージ
-- エラーの追跡が困難
-
-### 改善案
-
-#### 4.1 統一エラーハンドリング
-```typescript
-// app/lib/errors.ts
-export class AppError extends Error {
-  constructor(
-    message: string,
-    public code: string,
-    public statusCode: number = 500
-  ) {
-    super(message);
-  }
-}
-
-export class NotFoundError extends AppError {
-  constructor(resource: string) {
-    super(`${resource} not found`, 'NOT_FOUND', 404);
-  }
-}
-```
-
-#### 4.2 エラーバウンダリの実装
-```typescript
-// app/components/ErrorBoundary.tsx
-export function ErrorBoundary({ children }: { children: ReactNode }) {
-  // エラー処理ロジック
-}
-```
-
-### 実装優先度: 中
-
-## 5. ファイル構造の再編成
-
-### 現状の課題
-- 機能ごとの整理が不十分
-- 関連ファイルが分散している
-
-### 改善案
-
-```
-app/
-├── features/           # 機能ベースのディレクトリ
-│   ├── articles/
-│   │   ├── components/
-│   │   ├── hooks/
-│   │   ├── utils/
-│   │   └── types.ts
-│   ├── auth/
-│   └── search/
-├── shared/            # 共通コンポーネント・ユーティリティ
-│   ├── components/
-│   ├── hooks/
-│   └── utils/
-└── config/            # 設定ファイル
-```
-
-### 実装優先度: 低
-
-## 6. テスト戦略
-
-### 現状の課題
-- テストが存在しない
-- 品質保証プロセスが手動
-
-### 改善案
-
-#### 6.1 ユニットテスト
-```typescript
-// vitest.config.ts
-export default defineConfig({
-  test: {
-    globals: true,
-    environment: 'jsdom',
-    setupFiles: './test/setup.ts',
-  },
-});
-```
-
-#### 6.2 テスト対象
-- ユーティリティ関数: 100%カバレッジ目標
-- コンポーネント: 主要な振る舞いをテスト
-- ルーティング: 統合テスト
-
-### 実装優先度: 高
-
-## 7. 開発環境の改善
-
-### 現状の課題
-- リンター設定が不足
-- コード品質の自動チェックなし
-
-### 改善案
-
-#### 7.1 ESLint/Biome設定
-```json
-{
-  "extends": ["eslint:recommended", "plugin:@typescript-eslint/recommended"],
-  "rules": {
-    "no-console": "warn",
-    "prefer-const": "error"
-  }
-}
-```
-
-#### 7.2 プレコミットフック
-```json
-// package.json
-{
-  "husky": {
-    "hooks": {
-      "pre-commit": "lint-staged"
-    }
-  },
-  "lint-staged": {
-    "*.{ts,tsx}": ["eslint --fix", "prettier --write"]
-  }
-}
-```
-
-### 実装優先度: 中
-
-## 8. アクセシビリティ改善
-
-### 現状の課題
-- ARIA属性が不足
-- キーボードナビゲーションの考慮不足
-
-### 改善案
-
-#### 8.1 セマンティックHTML
-- 適切な見出しレベルの使用
-- ランドマークの追加
-- フォーカス管理の改善
-
-#### 8.2 ARIA属性の追加
-```tsx
-<article role="article" aria-labelledby={`article-${article.slug}`}>
-  <h2 id={`article-${article.slug}`}>{article.title}</h2>
-</article>
-```
-
-### 実装優先度: 中
-
-## 実装ロードマップ
-
-### フェーズ1（1-2週間）
-1. 型定義の強化
-2. 基本的なテスト環境のセットアップ
-3. 重要なコンポーネントのリファクタリング
-
-### フェーズ2（2-3週間）
-1. エラーハンドリングの統一
-2. パフォーマンス最適化の実施
-3. 開発環境の改善
-
-### フェーズ3（3-4週間）
-1. ファイル構造の再編成
-2. アクセシビリティの改善
-3. 包括的なテストカバレッジの達成
-
-## 成功指標
-
-- TypeScriptエラー: 0
-- テストカバレッジ: 80%以上
-- Lighthouseスコア: 95以上
-- ビルド時間: 30%短縮
-- バンドルサイズ: 20%削減
-
-## まとめ
-
-このリファクタリング計画は、コードベースの品質向上と長期的な保守性を目的としています。各フェーズは独立して実施可能であり、ビジネス要件に応じて優先順位を調整できます。
+# リファクタリングプラン
+
+このドキュメントは、ONE Engineering ブログサイトのリファクタリング計画をチェックリスト形式でまとめたものです。
+
+## 🎯 リファクタリングの目標
+
+- [ ] コードの保守性向上
+- [ ] パフォーマンスの最適化
+- [ ] 型安全性の強化
+- [ ] 開発体験の改善
+- [ ] テスト可能性の向上
+
+## 📋 Phase 1: コード品質とアーキテクチャの改善
+
+### 1.1 TypeScript型定義の強化
+
+- [ ] `app/types/` ディレクトリの型定義を見直し
+  - [ ] `Frontmatter` 型の必須プロパティを明確化
+  - [ ] `Article` 型にバリデーション機能を追加
+  - [ ] 共通の型定義を `types/common.ts` に統合
+- [ ] `any` 型の使用箇所を特定し、適切な型に置換
+- [ ] 型ガードの実装
+  - [ ] フロントマターのバリデーション関数
+  - [ ] 記事データの型安全性チェック
+
+### 1.2 エラーハンドリングの改善
+
+- [ ] `app/lib/articles.ts` のエラーハンドリング強化
+  - [ ] ファイル読み込みエラーの適切な処理
+  - [ ] 不正なフロントマターの検証
+  - [ ] 存在しない記事へのアクセス処理
+- [ ] カスタムエラークラスの実装
+- [ ] エラーバウンダリーコンポーネントの追加
+
+### 1.3 パフォーマンス最適化
+
+- [ ] 記事データの取得最適化
+  - [ ] `getArticles()` 関数のメモ化実装
+  - [ ] 不要なファイル読み込みの削減
+  - [ ] 記事一覧のページネーション実装
+- [ ] 画像最適化
+  - [ ] Next.js Image コンポーネントの活用
+  - [ ] WebP形式への変換
+  - [ ] 遅延読み込みの実装
+- [ ] バンドルサイズの最適化
+  - [ ] 未使用依存関係の削除
+  - [ ] 動的インポートの活用
+
+## 📋 Phase 2: コンポーネント設計の改善
+
+### 2.1 Atomic Design の見直し
+
+- [ ] コンポーネントの責務を再定義
+  - [ ] Atoms: 基本的なUI要素のみに限定
+  - [ ] Molecules: 単一の機能を持つ複合コンポーネント
+  - [ ] Organisms: ビジネスロジックを含む複雑なコンポーネント
+- [ ] コンポーネント間の依存関係を整理
+- [ ] 再利用可能なコンポーネントの抽出
+
+### 2.2 Props インターフェースの統一
+
+- [ ] 全コンポーネントのProps型定義を見直し
+- [ ] 共通のProps（className, children等）の統一
+- [ ] オプショナルプロパティのデフォルト値設定
+- [ ] Props のバリデーション実装
+
+### 2.3 スタイリングの統一
+
+- [ ] Tailwind CSS クラスの整理
+  - [ ] カスタムコンポーネントクラスの定義
+  - [ ] レスポンシブデザインの統一
+  - [ ] ダークモード対応の準備
+- [ ] CSS変数の活用
+- [ ] デザインシステムの構築
+
+## 📋 Phase 3: 開発体験の向上
+
+### 3.1 開発ツールの導入
+
+- [ ] Biome の導入と設定
+  - [ ] TypeScript専用ルールの設定
+  - [ ] React Hooks ルールの設定
+  - [ ] アクセシビリティルールの追加
+  - [ ] フォーマッター機能の活用（Prettier代替）
+- [ ] Husky + lint-staged の設定
+- [ ] コミットメッセージの規約化
+
+### 3.2 テスト環境の構築
+
+- [ ] Jest + React Testing Library の導入
+- [ ] コンポーネントテストの実装
+  - [ ] Atoms レベルのテスト
+  - [ ] Molecules レベルのテスト
+  - [ ] Organisms レベルのテスト
+- [ ] ユーティリティ関数のテスト
+- [ ] E2Eテストの検討（Playwright）
+
+### 3.3 開発環境の改善
+
+- [ ] Storybook の導入検討
+- [ ] 開発用のモックデータ作成
+- [ ] ホットリロードの最適化
+- [ ] デバッグツールの整備
+
+## 📋 Phase 4: SEO・アクセシビリティの強化
+
+### 4.1 SEO最適化
+
+- [ ] メタデータの動的生成改善
+- [ ] 構造化データの実装
+- [ ] サイトマップの自動生成
+- [ ] robots.txt の最適化
+- [ ] Core Web Vitals の改善
+
+### 4.2 アクセシビリティ向上
+
+- [ ] ARIA属性の適切な実装
+- [ ] キーボードナビゲーションの改善
+- [ ] スクリーンリーダー対応
+- [ ] カラーコントラストの確認
+- [ ] フォーカス管理の改善
+
+### 4.3 国際化対応の準備
+
+- [ ] i18n ライブラリの検討
+- [ ] 多言語対応の設計
+- [ ] 日本語フォントの最適化
+
+## 📋 Phase 5: 運用・保守性の向上
+
+### 5.1 監視・ログ機能
+
+- [ ] エラー監視ツールの導入（Sentry等）
+- [ ] パフォーマンス監視の実装
+- [ ] アクセス解析の改善
+- [ ] ログ出力の標準化
+
+### 5.2 CI/CD パイプラインの改善
+
+- [ ] GitHub Actions の最適化
+- [ ] Biome による自動リント・フォーマットチェック
+- [ ] 自動テストの実行
+- [ ] 自動デプロイの改善
+- [ ] セキュリティスキャンの追加
+
+### 5.3 ドキュメント整備
+
+- [ ] API ドキュメントの作成
+- [ ] コンポーネントドキュメントの整備
+- [ ] 開発ガイドラインの更新
+- [ ] トラブルシューティングガイドの作成
+
+## 📋 Phase 6: 新機能・拡張性の準備
+
+### 6.1 CMS連携の準備
+
+- [ ] ヘッドレスCMS対応の設計
+- [ ] 記事管理インターフェースの検討
+- [ ] プレビュー機能の実装
+
+### 6.2 検索機能の実装
+
+- [ ] 全文検索の実装
+- [ ] タグ・カテゴリ機能
+- [ ] フィルタリング機能
+
+### 6.3 ユーザー体験の向上
+
+- [ ] 読み込み状態の改善
+- [ ] オフライン対応（PWA化）
+- [ ] 記事の共有機能強化
+- [ ] コメント機能の検討
+
+## 🚀 実装優先度
+
+### 高優先度（Phase 1-2）
+- TypeScript型定義の強化
+- エラーハンドリングの改善
+- パフォーマンス最適化
+- コンポーネント設計の見直し
+
+### 中優先度（Phase 3-4）
+- テスト環境の構築
+- SEO・アクセシビリティの強化
+- 開発ツールの導入
+
+### 低優先度（Phase 5-6）
+- 監視・ログ機能
+- 新機能の実装
+- 拡張性の準備
+
+## 📝 注意事項
+
+- 各フェーズは段階的に実装し、動作確認を行う
+- 既存機能への影響を最小限に抑える
+- パフォーマンスの劣化がないか定期的に確認
+- チーム内でのコードレビューを徹底する
+- ユーザーへの影響を考慮したリリース計画を立てる
+
+## 📊 進捗管理
+
+各項目の完了時には以下を記録：
+- 完了日
+- 実装者
+- 関連するPR番号
+- 動作確認結果
+- 発見された課題
+
+---
+
+*最終更新: 2025-01-27*
+*作成者: Claude AI* 

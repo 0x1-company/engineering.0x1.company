@@ -1,0 +1,80 @@
+name: Claude Articles Review
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+    paths:
+      - 'articles/**/*.mdx'
+      - '.github/workflows/claude-articles-review.yml'
+
+permissions:
+  contents: read
+  pull-requests: write
+  id-token: write
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    if: ${{ github.actor != 'dependabot[bot]' && github.actor != 'devin-ai-integration[bot]' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: anthropics/claude-code-action@beta
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          direct_prompt: |
+            常に日本語でレスポンスしてください。
+            docs/writing-knowledge.mdを参考にしてください。
+            この記事をレビューして、以下の観点でフィードバックをお願いします：
+
+            ## 技術記事レビューチェックリスト
+
+            ### 1. 記事の構成と内容
+            - [ ] タイトルは記事の内容を適切に表現しているか
+            - [ ] 説明文（description）は簡潔で魅力的か
+            - [ ] 記事の構成は論理的で読みやすいか
+            - [ ] 技術的な内容は正確か
+            - [ ] 具体例やコードサンプルは適切か
+
+            ### 2. 文体とトーン
+            - [ ] 日本語として自然で読みやすいか
+            - [ ] 一人称複数形は「わたしたち」を使用しているか
+            - [ ] 技術用語は適切に使用されているか（英語のまま/カタカナ表記の判断）
+            - [ ] 読者層（エンジニア）に適した説明レベルか
+
+            ### 3. MDXとマークダウン
+            - [ ] フロントマターの形式は正しいか（title, description, date, author）
+            - [ ] 日付形式は"YYYY-MM-DD"になっているか
+            - [ ] コードブロックのシンタックスハイライトは適切か
+            - [ ] リンクは適切に動作するか
+
+            ### 4. 画像とメディア
+            - [ ] 画像パスは正しい形式か（/assets/YYYY/MMDD/article-name/）
+            - [ ] すべての画像に説明的なalt textが含まれているか
+            - [ ] 画像のファイルサイズは適切か（Webパフォーマンスの観点）
+            - [ ] 画像のファイル名は内容を表す英語名になっているか
+
+            ### 5. SEOとアクセシビリティ
+            - [ ] 見出しの階層構造は適切か（h1→h2→h3）
+            - [ ] 記事の長さは適切か（短すぎず長すぎず）
+            - [ ] キーワードは自然に配置されているか
+            - [ ] 外部リンクには<ExternalOgp>コンポーネントが使用されているか
+
+            ### 6. コンプライアンスとセキュリティ
+            - [ ] 機密情報や個人情報が含まれていないか
+            - [ ] 著作権に問題のある内容がないか
+            - [ ] 適切なライセンス表記がされているか（必要な場合）
+
+            ## 改善提案
+            上記のチェックリストに基づいて、具体的な改善提案を提供してください。
+            特に以下の点について重点的にレビューしてください：
+            - 技術的な正確性
+            - 読みやすさと理解しやすさ
+            - 0x1のエンジニアリングブログとしての品質基準
+
+            ## フィードバック形式
+            - 必須の修正点は「🔴 必須」として明記
+            - 推奨事項は「🟡 推奨」として明記
+            - 良い点は「✅ 良い点」として評価
