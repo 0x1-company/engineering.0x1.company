@@ -1,8 +1,8 @@
-import type { JSX } from "hono/jsx/jsx-runtime"
+import type { ReactNode } from "react"
 import { Header, Footer } from '../organisms'
 
 export interface PageLayoutProps {
-  children: JSX.Element
+  children: ReactNode
 }
 
 export function PageLayout({ children }: PageLayoutProps) {

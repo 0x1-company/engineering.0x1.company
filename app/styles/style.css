@@ -1,8 +1,5 @@
 @import "./syntax-highlight.css";
 
-@import "tailwindcss/preflight";
-@tailwind utilities;
-
 html {
   @apply text-slate-800;
 }

@@ -1,3 +1,5 @@
+import React from 'react';
+
 export const AnchorLink = ({
   href,
   children,
@@ -6,9 +8,9 @@ export const AnchorLink = ({
   ...rest
 }: {
   href: string;
-  children: string;
+  children: React.ReactNode;
   className?: string;
-  "data-footnote-ref": string;
+  "data-footnote-ref"?: string;
 }) => {
   const isFootNoteBackRef = className === "data-footnote-backref";
   return (

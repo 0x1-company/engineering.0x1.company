@@ -61,7 +61,7 @@ export function Footer() {
           <SocialIcon 
             platform="instagram" 
             href="https://www.instagram.com/0x1.company" 
-            bgColor="bg-green-500"
+            bgColor="bg-white"
           />
           <SocialIcon 
             platform="twitter" 

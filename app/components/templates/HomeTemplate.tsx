@@ -1,13 +1,18 @@
-import type { JSX } from "hono/jsx/jsx-runtime"
+import type { ReactNode } from "react"
+import { ArticleList, HeroSection } from '../organisms'
+import type { Article } from '../../types'
 
 export interface HomeTemplateProps {
-  children: JSX.Element
+  articles: Article[]
 }
 
-export function HomeTemplate({ children }: HomeTemplateProps) {
+export function HomeTemplate({ articles }: HomeTemplateProps) {
   return (
-    <div className="container mx-auto px-4 py-8 md:py-12 lg:py-16 max-w-screen-xl">
-      {children}
-    </div>
+    <>
+      <HeroSection />
+      <div className="container mx-auto px-4 py-8 md:py-12 lg:py-16 max-w-screen-xl">
+        <ArticleList articles={articles} />
+      </div>
+    </>
   )
 }
