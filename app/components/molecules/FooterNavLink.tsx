@@ -1,9 +1,9 @@
-import type { JSX } from 'hono/jsx/jsx-runtime'
+import type { ReactNode } from 'react'
 import { Link, Icon } from '../atoms'
 
 export interface FooterNavLinkProps {
   href?: string
-  children: JSX.Element | string
+  children: ReactNode
   isExternal?: boolean
   className?: string
 }

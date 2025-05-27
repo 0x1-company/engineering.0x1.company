@@ -1,8 +1,8 @@
-import type { JSX } from "hono/jsx/jsx-runtime"
+import type { ReactNode } from "react"
 
 export interface LinkProps {
   href: string
-  children: JSX.Element | string | number | boolean | null | undefined
+  children: ReactNode
   className?: string
   isExternal?: boolean
   target?: string

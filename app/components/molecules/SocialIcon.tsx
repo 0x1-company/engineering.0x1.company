@@ -3,7 +3,7 @@ import { Link, Icon } from '../atoms'
 export interface SocialIconProps {
   platform: 'instagram' | 'twitter'
   href?: string
-  bgColor: string
+  bgColor?: string
   className?: string
 }
 

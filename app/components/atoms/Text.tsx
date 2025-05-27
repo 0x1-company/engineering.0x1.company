@@ -1,7 +1,7 @@
-import type { JSX } from "hono/jsx/jsx-runtime"
+import type { ReactNode, ElementType } from "react"
 
 export interface TextProps {
-  children: JSX.Element | string | number | boolean | null | undefined
+  children: ReactNode
   as?: 'p' | 'span' | 'div' | 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'time'
   variant?: 'body' | 'caption' | 'title' | 'subtitle' | 'large'
   color?: 'primary' | 'secondary' | 'muted' | 'error' | 'success'

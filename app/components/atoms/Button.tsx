@@ -1,7 +1,7 @@
-import type { JSX } from "hono/jsx/jsx-runtime"
+import type { ReactNode } from "react"
 
 export interface ButtonProps {
-  children: JSX.Element | string
+  children: ReactNode
   onClick?: () => void
   href?: string
   variant?: 'primary' | 'secondary' | 'outline'

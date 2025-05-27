@@ -2,12 +2,24 @@
   "version": 2,
   "rewrites": [
     {
-      "source": "/tech-stack-of-ios-d6466798ed80",
-      "destination": "/articles/tech-stack-of-ios.html"
+      "source": "/about",
+      "destination": "/articles/about"
     },
     {
-      "source": "/articles/:path*",
-      "destination": "/articles/:path*.html"
+      "source": "/ios-tech-stack",
+      "destination": "/articles/ios-tech-stack"
+    },
+    {
+      "source": "/create-workspace-bulk-group",
+      "destination": "/articles/create-workspace-bulk-group"
+    },
+    {
+      "source": "/cloudrun-job-migration",
+      "destination": "/articles/cloudrun-job-migration"
+    },
+    {
+      "source": "/tech-stack-of-ios-d6466798ed80",
+      "destination": "/articles/tech-stack-of-ios"
     }
   ]
 }
