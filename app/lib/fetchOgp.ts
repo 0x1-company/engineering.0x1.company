@@ -33,7 +33,8 @@ export const fetchOgp = async (url: string) => {
 
     return ogp;
   } catch (e) {
-    console.error(e);
+    console.warn(`[fetchOgp] Warning: Failed to fetch OGP data for ${url}. Using fallback.`);
+    return ogp;
   }
 };
 
