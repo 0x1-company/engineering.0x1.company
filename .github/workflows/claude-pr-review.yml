@@ -1,0 +1,36 @@
+name: Claude PR Review
+
+on:
+  pull_request:
+    types: [opened]
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    if: ${{ github.actor != 'dependabot[bot]' && github.actor != 'devin-ai-integration[bot]' }}
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: anthropics/claude-code-action@beta
+        id: claude-review
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          custom_instructions: |
+            常に日本語でレスポンスしてください。
+            .cursor/rules に定義されたルールに従ってください。
+            docs に定義されたドキュメントを参考にしてください。
+
+          direct_prompt: |
+            このPRをご覧ください。変更点を見て、以下のようなフィードバックをお願いします：
+            - PRタイトルの提案
+            - コードの品質とベストプラクティス
+            - 潜在的なバグや問題点
+            - 改善提案
+            - 全体的なアーキテクチャとデザインの決定
+
+            建設的で具体的なフィードバックをしてください。該当する場合は、インラインでコメントしてください。
