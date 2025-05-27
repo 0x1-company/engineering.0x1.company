@@ -9,7 +9,7 @@ export function HeroSection() {
           <Text as="h1" className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 tracking-tight text-white">
             ONE Engineering
           </Text>
-          <Text as="p" className="text-xl md:text-2xl text-gray-300 mb-8 leading-relaxed">
+          <Text as="p" className="text-xl md:text-2xl text-white mb-8 leading-relaxed">
             わたしたちの技術的な挑戦と発見を共有します。
             モバイルアプリ開発、クラウドインフラ、そして最新技術の活用について。
           </Text>
