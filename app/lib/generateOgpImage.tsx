@@ -18,7 +18,15 @@ async function loadLocalFont(): Promise<ArrayBuffer> {
   try {
     const fontPath = path.join(process.cwd(), 'public', 'fonts', 'NotoSansJP-Bold.otf')
     const fontBuffer = await fs.readFile(fontPath)
-    return fontBuffer.buffer.slice(fontBuffer.byteOffset, fontBuffer.byteOffset + fontBuffer.byteLength)
+    const arrayBuffer = fontBuffer.buffer.slice(fontBuffer.byteOffset, fontBuffer.byteOffset + fontBuffer.byteLength)
+    // SharedArrayBufferの場合はArrayBufferに変換
+    if (arrayBuffer instanceof SharedArrayBuffer) {
+      const buffer = new ArrayBuffer(arrayBuffer.byteLength)
+      const view = new Uint8Array(buffer)
+      view.set(new Uint8Array(arrayBuffer))
+      return buffer
+    }
+    return arrayBuffer
   } catch (error) {
     console.error('Failed to load local font:', error)
     throw new Error('Could not load local font file')
