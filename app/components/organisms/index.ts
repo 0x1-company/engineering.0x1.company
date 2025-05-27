@@ -1,6 +1,7 @@
 export { ArticleCard } from './ArticleCard'
 export { ArticlePreview } from './ArticlePreview'
 export { ArticleList } from './ArticleList'
+export { ErrorBoundary } from './ErrorBoundary'
 export { Header } from './Header'
 export { Footer } from './Footer'
 export { NotFound } from './NotFound'

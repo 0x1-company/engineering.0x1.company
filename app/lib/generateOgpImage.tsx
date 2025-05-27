@@ -14,65 +14,15 @@ interface OgpImageOptions {
   date?: string
 }
 
-function buildGoogleFontUrl({
-  family,
-  weight,
-  text,
-  display,
-}: {
-  family: string
-  weight?: number
-  text?: string
-  display?: string
-}) {
-  const params: Record<string, string> = {
-    family: `${encodeURIComponent(family)}${weight ? `:wght@${weight}` : ''}`,
+async function loadLocalFont(): Promise<ArrayBuffer> {
+  try {
+    const fontPath = path.join(process.cwd(), 'public', 'fonts', 'NotoSansJP-Bold.otf')
+    const fontBuffer = await fs.readFile(fontPath)
+    return fontBuffer.buffer.slice(fontBuffer.byteOffset, fontBuffer.byteOffset + fontBuffer.byteLength)
+  } catch (error) {
+    console.error('Failed to load local font:', error)
+    throw new Error('Could not load local font file')
   }
-
-  if (text) {
-    params.text = text
-  } else {
-    params.subset = 'latin'
-  }
-
-  if (display) {
-    params.display = display
-  }
-
-  return `https://fonts.googleapis.com/css2?${Object.keys(params)
-    .map((key) => `${key}=${params[key]}`)
-    .join('&')}`
-}
-
-async function loadGoogleFont({
-  family,
-  weight,
-  text,
-}: {
-  family: string
-  weight?: number
-  text?: string
-}) {
-  const url = buildGoogleFontUrl({ family, weight, text })
-
-  const css = await fetch(`${url}`, {
-    headers: {
-      'User-Agent':
-        'Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10_6_8; de-at) AppleWebKit/533.21.1 (KHTML, like Gecko) Version/5.0.5 Safari/533.21.1',
-    },
-  }).then((res) => res.text())
-
-  const fontUrl = css.match(
-    /src: url\((.+)\) format\('(opentype|truetype)'\)/,
-  )?.[1]
-
-  if (!fontUrl) {
-    throw new Error('Could not find font URL')
-  }
-
-  const res = await fetch(fontUrl)
-  const buffer = await res.arrayBuffer()
-  return buffer
 }
 
 export async function generateOgpImage(
@@ -84,10 +34,7 @@ export async function generateOgpImage(
   const titleLen = title.length
   const splitedTitle = parser.parse(title)
 
-  const notoSansBold = await loadGoogleFont({
-    family: 'Noto Sans JP',
-    weight: 600,
-  })
+  const notoSansBold = await loadLocalFont()
 
   const getTextSize = () => {
     if (titleLen > 35) {

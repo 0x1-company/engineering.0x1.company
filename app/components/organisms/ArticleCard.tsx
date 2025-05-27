@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { Link } from '../atoms'
 import { ArticleImage, ArticleTitle, ArticleDescription, ArticleDate, ReadMoreLink } from '../molecules'
 import type { Article } from '../../types'
@@ -8,7 +9,7 @@ export interface ArticleCardProps {
   priority?: 'high' | 'low'
 }
 
-export function ArticleCard({ article, className, priority = 'low' }: ArticleCardProps) {
+function ArticleCardComponent({ article, className, priority = 'low' }: ArticleCardProps) {
   const ogpPath = `/ogps/${article.entryName}.png`
 
   return (
@@ -43,3 +44,5 @@ export function ArticleCard({ article, className, priority = 'low' }: ArticleCar
     </article>
   )
 }
+
+export const ArticleCard = memo(ArticleCardComponent)

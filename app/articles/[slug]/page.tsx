@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
+import Image from 'next/image';
 import fs from 'fs/promises';
 import path from 'path';
 import matter from 'gray-matter';
@@ -8,7 +9,7 @@ import remarkFrontmatter from 'remark-frontmatter';
 import remarkGfm from 'remark-gfm';
 import rehypePrettyCode from 'rehype-pretty-code';
 import theme from '../../../assets/theme.json';
-import { ArticlePreview, ArticleList } from '../../components/organisms';
+import { ArticlePreview, ArticleList, ErrorBoundary } from '../../components/organisms';
 import { getArticles } from '../../lib/articles';
 import { getAuthor } from '../../lib/authors';
 import mdxComponents from '../../lib/mdx-components';
@@ -21,21 +22,26 @@ export async function generateStaticParams() {
 }
 
 async function getArticleContent(slug: string) {
-  const articles = await getArticles();
-  const article = articles.find(a => a.entryName === slug);
-  
-  if (!article) {
+  try {
+    const articles = await getArticles();
+    const article = articles.find(a => a.entryName === slug);
+    
+    if (!article) {
+      return null;
+    }
+
+    const fileContent = await fs.readFile(article.path, 'utf-8');
+    const { content, data } = matter(fileContent);
+
+    return {
+      content,
+      frontmatter: data,
+      article,
+    };
+  } catch (error) {
+    console.error('Failed to load article content:', error);
     return null;
   }
-
-  const fileContent = await fs.readFile(article.path, 'utf-8');
-  const { content, data } = matter(fileContent);
-
-  return {
-    content,
-    frontmatter: data,
-    article,
-  };
 }
 
 export async function generateMetadata({
@@ -146,10 +152,12 @@ export default async function ArticlePage({
             {author && (
               <div className="flex items-center gap-2">
                 {author.icon && (
-                  <img
+                  <Image
                     src={author.icon}
                     alt={author.name}
-                    className="w-6 h-6 rounded-full"
+                    width={24}
+                    height={24}
+                    className="w-6 h-6 rounded-full object-cover"
                   />
                 )}
                 <span>{author.name}</span>
@@ -168,18 +176,20 @@ export default async function ArticlePage({
         </div>
 
         {/* 記事本文 */}
-        <article className="prose prose-lg prose-gray max-w-none mb-16">
-          <MDXRemote
-            source={content}
-            components={mdxComponents}
-            options={{
-              mdxOptions: {
-                remarkPlugins: [remarkFrontmatter, remarkGfm],
-                rehypePlugins: [[rehypePrettyCode, { theme }]],
-              },
-            }}
-          />
-        </article>
+        <ErrorBoundary>
+          <article className="prose prose-lg prose-gray max-w-none mb-16">
+            <MDXRemote
+              source={content}
+              components={mdxComponents}
+              options={{
+                mdxOptions: {
+                  remarkPlugins: [remarkFrontmatter, remarkGfm],
+                  rehypePlugins: [[rehypePrettyCode, { theme }]],
+                },
+              }}
+            />
+          </article>
+        </ErrorBoundary>
       </main>
 
       {/* 最新記事セクション */}
