@@ -8,6 +8,16 @@ export interface FooterNavLinkProps {
   className?: string
 }
 
+/**
+ * フッターナビゲーションリンクコンポーネント
+ * @param {FooterNavLinkProps} props - フッターリンクのプロパティ
+ * @returns {JSX.Element} フッターリンク要素
+ * @description フッター用のリンクコンポーネント（外部リンクアイコン付き、リスト要素を含まない）
+ * @example
+ * <ul>
+ *   <li><FooterNavLink href="/privacy" isExternal>Privacy Policy</FooterNavLink></li>
+ * </ul>
+ */
 export function FooterNavLink({ href, children, isExternal = false, className = '' }: FooterNavLinkProps) {
   const linkContent = isExternal ? (
     <span className="flex items-center">
@@ -17,14 +27,12 @@ export function FooterNavLink({ href, children, isExternal = false, className = 
   ) : children
   
   return (
-    <li>
-      <Link
-        href={href || "#"}
-        className={`hover:text-[#FF8040] transition-colors ${className}`}
-        isExternal={isExternal}
-      >
-        {linkContent}
-      </Link>
-    </li>
+    <Link
+      href={href || "#"}
+      className={`hover:text-[#FF8040] transition-colors ${className}`}
+      isExternal={isExternal}
+    >
+      {linkContent}
+    </Link>
   )
 }

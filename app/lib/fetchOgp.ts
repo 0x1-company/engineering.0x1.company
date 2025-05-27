@@ -1,15 +1,39 @@
 import { JSDOM } from "jsdom";
+import type { OgpData } from "../types";
+
+/**
+ * OGPメタデータの有効なキー
+ * @typedef {'title' | 'description' | 'image' | 'url'} OgpKey
+ */
 type OgpKey = "title" | "description" | "image" | "url";
-type Ogp = {
-  title: string;
-  description: string;
-  image: string;
-  url: string;
+
+/**
+ * 拡張OGPデータ（ファビコンと画像altテキストを含む）
+ * @interface ExtendedOgpData
+ * @extends {OgpData}
+ * @property {string} [imageAlt] - OGP画像の代替テキスト
+ * @property {string} [favicon] - サイトのファビコンURL
+ */
+interface ExtendedOgpData extends OgpData {
   imageAlt?: string;
   favicon?: string;
-};
-export const fetchOgp = async (url: string) => {
-  const ogp: Ogp = {
+}
+/**
+ * 指定されたURLからOGP情報を取得
+ * @param {string} url - OGP情報を取得するURL
+ * @returns {Promise<ExtendedOgpData>} OGP情報（取得失敗時は空のデータ）
+ * @throws {never} エラーはスローされず、失敗時はフォールバック値を返す
+ * @description
+ * - JSDOMを使用して指定されたURLからOGPメタデータを抽出
+ * - GoogleのFavicon APIを使用してファビコンを取得
+ * - 取得失敗時は警告を出力し、空のOGPデータを返す
+ * @example
+ * const ogpData = await fetchOgp('https://example.com');
+ * console.log(ogpData.title); // サイトのタイトル
+ * console.log(ogpData.favicon); // ファビコンのURL
+ */
+export const fetchOgp = async (url: string): Promise<ExtendedOgpData> => {
+  const ogp: ExtendedOgpData = {
     title: "",
     description: "",
     image: "",
@@ -38,8 +62,13 @@ export const fetchOgp = async (url: string) => {
   }
 };
 
-// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-function isOgpKey(key: any): key is OgpKey {
+/**
+ * 指定されたキーがOGPキーかどうかを判定
+ * @param {unknown} key - 検証するキー
+ * @returns {boolean} 有効なOGPキーの場合true
+ * @private
+ */
+function isOgpKey(key: unknown): key is OgpKey {
   return (
     key === "title" ||
     key === "image" ||

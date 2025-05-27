@@ -1,10 +1,7 @@
 import satori from 'satori'
 import { Resvg } from '@resvg/resvg-js'
-import { loadDefaultJapaneseParser } from 'budoux'
 import fs from 'fs/promises'
 import path from 'path'
-
-const parser = loadDefaultJapaneseParser()
 
 interface OgpImageOptions {
   title: string
@@ -37,10 +34,9 @@ export async function generateOgpImage(
   options: OgpImageOptions,
   outputPath: string
 ): Promise<void> {
-  const { title, description, author, authorIcon, date } = options
+  const { title, author, authorIcon } = options
 
   const titleLen = title.length
-  const splitedTitle = parser.parse(title)
 
   const notoSansBold = await loadLocalFont()
 

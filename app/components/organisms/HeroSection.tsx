@@ -1,4 +1,4 @@
-import { Text } from '../atoms'
+import { Text, Badge } from '../atoms'
 
 export function HeroSection() {
   return (
@@ -13,19 +13,19 @@ export function HeroSection() {
             わたしたちの技術的な挑戦と発見を共有します。
             モバイルアプリ開発、クラウドインフラ、そして最新技術の活用について。
           </Text>
-          <div className="flex flex-wrap gap-4 text-sm md:text-base text-gray-400">
-            <span className="flex items-center gap-2">
-              <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+          <div className="flex flex-wrap gap-4">
+            <Badge variant="success" className="flex items-center gap-2 bg-green-600/80 text-green-100 border border-green-500">
+              <span className="w-2 h-2 bg-green-300 rounded-full animate-pulse" />
               iOS Development
-            </span>
-            <span className="flex items-center gap-2">
-              <span className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" />
+            </Badge>
+            <Badge variant="info" className="flex items-center gap-2 bg-blue-600/80 text-blue-100 border border-blue-500">
+              <span className="w-2 h-2 bg-blue-300 rounded-full animate-pulse" />
               Cloud Infrastructure
-            </span>
-            <span className="flex items-center gap-2">
-              <span className="w-2 h-2 bg-purple-400 rounded-full animate-pulse" />
+            </Badge>
+            <Badge variant="default" className="flex items-center gap-2 bg-purple-600/80 text-purple-100 border border-purple-500">
+              <span className="w-2 h-2 bg-purple-300 rounded-full animate-pulse" />
               System Architecture
-            </span>
+            </Badge>
           </div>
         </div>
       </div>

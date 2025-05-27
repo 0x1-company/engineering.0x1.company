@@ -2,6 +2,7 @@ import { memo } from 'react'
 import { Link } from '../atoms'
 import { ArticleImage, ArticleTitle, ArticleDescription, ArticleDate, ReadMoreLink } from '../molecules'
 import type { Article } from '../../types'
+import { validateProps, validateRequired, validateEnum } from '../../lib/utils/validation'
 
 export interface ArticleCardProps {
   article: Article
@@ -9,11 +10,15 @@ export interface ArticleCardProps {
   priority?: 'high' | 'low'
 }
 
-function ArticleCardComponent({ article, className, priority = 'low' }: ArticleCardProps) {
+function ArticleCardComponent(props: ArticleCardProps) {
+  const { article, className = '', priority = 'low' } = validateProps('ArticleCard', props, {
+    article: (v) => validateRequired(v, 'article', 'ArticleCard'),
+    priority: (v) => v ? validateEnum(v, 'priority', 'ArticleCard', ['high', 'low'] as const) : 'low'
+  })
   const ogpPath = `/ogps/${article.entryName}.png`
 
   return (
-    <article className={`group bg-white border border-gray-100 hover:border-gray-300 rounded-xl overflow-hidden transition-all duration-300 h-full flex flex-col hover:shadow-lg hover:-translate-y-1 ${className || ''}`}>
+    <article className={`group bg-white border border-gray-100 hover:border-gray-300 rounded-xl overflow-hidden transition-all duration-300 h-full flex flex-col hover:shadow-lg hover:-translate-y-1 ${className}`}>
       <Link 
         href={`/articles/${article.entryName}`} 
         className="flex flex-col h-full"

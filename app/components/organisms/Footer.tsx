@@ -1,4 +1,4 @@
-import { Text } from '../atoms'
+import { Text, ListItem, Separator } from '../atoms'
 import { FooterNavLink, SocialIcon } from '../molecules'
 
 export function Footer() {
@@ -11,7 +11,7 @@ export function Footer() {
           <Text as="h2" variant="title">ONE株式会社</Text>
         </div>
         
-        <hr className="border-gray-200 mb-8" />
+        <Separator className="mb-8" />
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <nav aria-label="フッターナビゲーション">
@@ -20,29 +20,29 @@ export function Footer() {
             <div className="mb-6">
               <Text as="h4" className="font-medium mb-2">私たちについて</Text>
               <ul className="space-y-2 text-sm text-gray-600">
-                <FooterNavLink href="https://0x1.company/ja#company">会社概要</FooterNavLink>
-                <FooterNavLink href="https://0x1.company/ja#member">経営メンバー</FooterNavLink>
+                <ListItem><FooterNavLink href="https://0x1.company/ja#company">会社概要</FooterNavLink></ListItem>
+                <ListItem><FooterNavLink href="https://0x1.company/ja#member">経営メンバー</FooterNavLink></ListItem>
               </ul>
             </div>
             
             <div className="mb-6">
               <Text as="h4" className="font-medium mb-2">事業・サービス</Text>
               <ul className="space-y-2 text-sm text-gray-600">
-                <FooterNavLink href="https://0x1.company/ja#products">サービス一覧</FooterNavLink>
+                <ListItem><FooterNavLink href="https://0x1.company/ja#products">サービス一覧</FooterNavLink></ListItem>
               </ul>
             </div>
             
             <div className="mb-6">
               <Text as="h4" className="font-medium mb-2">ニュース</Text>
               <ul className="space-y-2 text-sm text-gray-600">
-                <FooterNavLink href="https://prtimes.jp/main/html/searchrlp/company_id/101105">プレスリリース</FooterNavLink>
+                <ListItem><FooterNavLink href="https://prtimes.jp/main/html/searchrlp/company_id/101105">プレスリリース</FooterNavLink></ListItem>
               </ul>
             </div>
             
             <div className="mb-6">
               <Text as="h4" className="font-medium mb-2">お問い合わせ</Text>
               <ul className="space-y-2 text-sm text-gray-600">
-                <FooterNavLink href="https://0x1.company/ja#contact">お問い合わせ</FooterNavLink>
+                <ListItem><FooterNavLink href="https://0x1.company/ja#contact">お問い合わせ</FooterNavLink></ListItem>
               </ul>
             </div>
           </nav>

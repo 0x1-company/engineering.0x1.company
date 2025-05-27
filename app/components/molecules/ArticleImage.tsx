@@ -21,6 +21,8 @@ export function ArticleImage({
         <Image 
           src={src}
           alt={alt}
+          fill
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           className="w-full h-full object-cover absolute inset-0 transition-transform duration-700 group-hover:scale-110"
           loading={priority === 'high' ? 'eager' : 'lazy'}
         />

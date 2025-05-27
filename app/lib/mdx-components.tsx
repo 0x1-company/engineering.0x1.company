@@ -1,14 +1,28 @@
-import React from 'react'
-import { ExternalOgp } from './mdxComponents/externalOgp'
+import React, { lazy, Suspense } from 'react'
 import { AnchorLink } from './mdxComponents/anchorLink'
 import { ArticleImage } from './mdxComponents/articleImage'
 
+// 動的インポートでExternalOgpを遅延読み込み
+const ExternalOgp = lazy(() => import('./mdxComponents/externalOgp').then(mod => ({ default: mod.ExternalOgp })))
+
 type ComponentProps<T extends keyof React.JSX.IntrinsicElements> = React.JSX.IntrinsicElements[T]
+
+// ExternalOgpのローディングコンポーネント
+const ExternalOgpWithSuspense = (props: any) => (
+  <Suspense fallback={
+    <div className="border rounded-lg p-4 my-4 animate-pulse">
+      <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+      <div className="h-3 bg-gray-200 rounded w-full"></div>
+    </div>
+  }>
+    <ExternalOgp {...props} />
+  </Suspense>
+)
 
 // Define the MDX components that will be used in MDX files
 const mdxComponents = {
   // Custom components
-  ExternalOgp,
+  ExternalOgp: ExternalOgpWithSuspense,
   img: ArticleImage,
   a: AnchorLink,
   // Default components

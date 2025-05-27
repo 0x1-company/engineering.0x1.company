@@ -7,10 +7,15 @@ export interface SocialIconProps {
   className?: string
 }
 
-export function SocialIcon({ platform, href, bgColor, className = '' }: SocialIconProps) {
+export function SocialIcon({ 
+  platform, 
+  href = '#', 
+  bgColor = 'bg-gray-400', 
+  className = '' 
+}: SocialIconProps) {
   return (
     <Link
-      href={href || "#"}
+      href={href}
       className={`w-10 h-10 rounded-full ${bgColor} flex items-center justify-center text-white transition-transform hover:scale-110 ${className}`}
       isExternal
     >

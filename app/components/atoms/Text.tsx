@@ -1,4 +1,4 @@
-import type { ReactNode, ElementType } from "react"
+import type { ReactNode } from "react"
 
 export interface TextProps {
   children: ReactNode

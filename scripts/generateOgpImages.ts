@@ -1,10 +1,20 @@
-import { readdir } from 'fs/promises'
 import path from 'path'
 import { getArticles } from '../app/lib/articles'
 import { getAuthor } from '../app/lib/authors'
 import { generateOgpImage } from '../app/lib/generateOgpImage'
 import { formattedDate } from '../app/lib/date'
 
+/**
+ * OGP画像生成スクリプトのメイン関数
+ * @async
+ * @returns {Promise<void>}
+ * @description
+ * - 全記事のOGP画像を一括生成
+ * - 並列処理で高速化
+ * - エラーハンドリング付き（部分的な失敗を許容）
+ * - 進捗状況をコンソールに出力
+ * @throws {Error} 全ての画像生成に失敗した場合
+ */
 async function main() {
   try {
     console.log('🖼️  OGP画像を生成中...')

@@ -8,6 +8,13 @@ export const metadata: Metadata = {
   },
 };
 
+/**
+ * ホームページコンポーネント
+ * @returns {Promise<JSX.Element>} ホームページのレイアウト
+ * @description
+ * - 全記事を取得してホームテンプレートに渡す
+ * - SSGで静的生成される
+ */
 export default async function HomePage() {
   const articles = await getArticles();
   return <HomeTemplate articles={articles} />;

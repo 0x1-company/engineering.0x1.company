@@ -2,18 +2,22 @@ import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
 import Image from 'next/image';
 import fs from 'fs/promises';
-import path from 'path';
 import matter from 'gray-matter';
 import { MDXRemote } from 'next-mdx-remote/rsc';
 import remarkFrontmatter from 'remark-frontmatter';
 import remarkGfm from 'remark-gfm';
 import rehypePrettyCode from 'rehype-pretty-code';
 import theme from '../../../assets/theme.json';
-import { ArticlePreview, ArticleList, ErrorBoundary } from '../../components/organisms';
+import { ArticleList, ErrorBoundary } from '../../components/organisms';
 import { getArticles } from '../../lib/articles';
 import { getAuthor } from '../../lib/authors';
 import mdxComponents from '../../lib/mdx-components';
 
+/**
+ * 静的パラメータを生成（SSG用）
+ * @returns {Promise<Array<{ slug: string }>>} 全記事のスラッグ配列
+ * @description Next.jsの静的生成のために、全ての記事スラッグを事前に生成
+ */
 export async function generateStaticParams() {
   const articles = await getArticles();
   return articles.map((article) => ({
@@ -21,6 +25,12 @@ export async function generateStaticParams() {
   }));
 }
 
+/**
+ * 記事のコンテンツを取得
+ * @param {string} slug - 記事のスラッグ
+ * @returns {Promise<{ content: string; frontmatter: any; article: Article } | null>} 記事データまたはnull
+ * @private
+ */
 async function getArticleContent(slug: string) {
   try {
     const articles = await getArticles();
@@ -44,6 +54,13 @@ async function getArticleContent(slug: string) {
   }
 }
 
+/**
+ * ページのメタデータを生成
+ * @param {Object} props - プロパティ
+ * @param {Promise<{ slug: string }>} props.params - URLパラメータ
+ * @returns {Promise<Metadata>} ページのメタデータ
+ * @description SEOとOGPのためのメタデータを動的に生成
+ */
 export async function generateMetadata({
   params,
 }: {
@@ -112,6 +129,17 @@ export async function generateMetadata({
   };
 }
 
+/**
+ * 記事詳細ページコンポーネント
+ * @param {Object} props - プロパティ
+ * @param {Promise<{ slug: string }>} props.params - URLパラメータ
+ * @returns {Promise<JSX.Element>} 記事ページのレイアウト
+ * @description
+ * - MDXコンテンツをレンダリング
+ * - 記事メタデータと著者情報を表示
+ * - 関連記事を下部に表示
+ * - エラーバウンダリでエラーをキャッチ
+ */
 export default async function ArticlePage({
   params,
 }: {
@@ -168,9 +196,11 @@ export default async function ArticlePage({
 
         {/* OGP画像 */}
         <div className="mb-12">
-          <img
+          <Image
             src={`/ogps/${article.entryName}.png`}
             alt={article.frontmatter.title}
+            width={1200}
+            height={630}
             className="w-full rounded-lg shadow-md"
           />
         </div>
