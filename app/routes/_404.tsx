@@ -1,5 +1,5 @@
 import type { NotFoundHandler } from 'hono'
-import { NotFound } from '../components/not-found'
+import { NotFound } from '../components'
 
 const handler: NotFoundHandler = (c) => {
   c.status(404)

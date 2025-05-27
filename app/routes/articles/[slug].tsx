@@ -1,10 +1,8 @@
 import { createRoute } from 'honox/factory';
 import { getArticleByEntryName, getArticles, getLatestArticlesWithoutTargetArticle } from '../../lib/articles';
 import { formattedDate } from '../../lib/date';
-import { NotFound } from '../../components/not-found';
+import { NotFound, ArticleList, HomeTemplate } from '../../components';
 import { ssgParams } from 'hono/ssg';
-import { ArticleList } from '../../components/ArticleList';
-import { HomeContainer } from '../../components/HomeContainer';
 
 export default createRoute(
   ssgParams(() => {
@@ -31,7 +29,7 @@ export default createRoute(
     const ogpPath = `/ogps/${slug}.png`;
 
     return c.render(
-      <HomeContainer>
+      <HomeTemplate>
         <div class='container mx-auto px-4'>
           <div class='flex flex-col mb-10 items-center'>
             <h1 class='text-center leading-tight text-3xl mb-0 mt-6 pb-2 font-bold flex justify-center'>
@@ -58,7 +56,7 @@ export default createRoute(
 
           <ArticleList articles={latestArticles} />
         </div>
-      </HomeContainer>
+      </HomeTemplate>
     );
   }
 );

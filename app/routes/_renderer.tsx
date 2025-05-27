@@ -1,7 +1,6 @@
 import { jsxRenderer, useRequestContext } from 'hono/jsx-renderer'
 import { Link, Script } from 'honox/server'
-import { Footer } from '../components/footer'
-import { Header } from '../components/header'
+import { PageLayout } from '../components'
 import { getArticleByEntryName } from '../lib/articles'
 
 export default jsxRenderer(({ children }) => {
@@ -43,14 +42,14 @@ export default jsxRenderer(({ children }) => {
         <Link href="/app/style.css" rel="stylesheet" />
         <Script src="/app/client.ts" async />
       </head>
-      <body class="flex flex-col min-h-screen">
-        <Header />
-        <main class='items-center justify-center flex flex-grow'>
-          <div class='w-screen'>
-            {children}
+      <body>
+        <PageLayout>
+          <div className='items-center justify-center flex flex-grow'>
+            <div className='w-screen'>
+              {children}
+            </div>
           </div>
-        </main>
-        <Footer />
+        </PageLayout>
       </body>
     </html>
   )
