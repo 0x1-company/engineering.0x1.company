@@ -115,7 +115,7 @@ export const Footer = () => {
   
   return (
     <footer className="bg-gray-50 pt-12 pb-8" aria-labelledby="footer-heading">
-      <div className="container mx-auto px-4">
+      <div className="container mx-auto px-4 max-w-screen-xl">
         {/* Company Name */}
         <div className="mb-8">
           <h2 className="text-2xl font-bold">ONE株式会社</h2>
