@@ -1,0 +1,386 @@
+---
+title: "GitHub ActionsとBunで構築したSlackアーカイブシステム"
+description: "GitHub ActionsのCronとBunランタイムを活用して、Slackチャンネルのメッセージを毎日自動でアーカイブするシステムの構築から運用まで"
+date: "2025-05-31"
+author: tomokisun
+---
+
+わたしたちは、社内のSlackでの議論や情報を長期的に保存・検索可能にするため、GitHub Actionsを使った自動アーカイブシステムを構築しました。本記事では、その設計から実装まで詳しく解説します。
+
+## システム概要
+
+このアーカイブシステムは、複数のSlackチャンネルから会話ログを毎日自動的に収集し、TSVファイルとして保存するシステムです。GitHub ActionsのCron機能を使用して毎日JST 00:00に実行され、各チャンネルの新しいメッセージを並列で取得します。
+
+### 主な機能
+
+- **自動実行**: 毎日JST 00:00に自動でアーカイブを実行
+- **構造化保存**: 年/月のディレクトリ構造でTSVファイルとして保存
+- **スマート同期**: 初回は全履歴、以降は前日分のみを取得
+- **スレッド対応**: スレッドの返信も含めて完全にアーカイブ
+- **並列処理**: GitHub Actions matrixを使用してチャンネルごとに並列実行（最大5並列）
+- **リトライ機能**: ネットワークエラーやレート制限に対する自動リトライ（最大3回）
+
+## 技術スタック
+
+### 言語・ランタイム
+- **TypeScript 5.0+**: 型安全性とコード品質の向上
+- **Bun 1.0+**: Node.jsより高速なJavaScriptランタイム
+
+### API・サービス
+- **Slack Web API**: `@slack/web-api v7.9.2`を使用してメッセージ取得
+- **GitHub Actions**: CI/CDプラットフォームでのスケジュール実行
+
+### ストレージ・ファイル形式
+- **TSVファイル**: 分析・検索が容易なタブ区切り形式
+- **GitHubリポジトリ**: ファイルの永続化とバージョン管理
+
+## アーキテクチャ設計
+
+### データフロー
+
+システムのデータフローは以下の通りです：
+
+1. GitHub ActionsがJST 00:00 (UTC 15:00)に毎日トリガー
+2. 並列ジョブが各チャンネルごとに起動（最大5並列）
+3. スクリプトが指定されたSlackチャンネルからメッセージを取得
+4. データは年/月のディレクトリ構造でTSVファイルとして保存
+5. ファイルはリポジトリにコミットバック
+
+### ディレクトリ構造
+
+```
+archives/
+├── C1234567890/                    # チャンネルID
+│   ├── 2024/                       # 年
+│   │   ├── 01/                     # 月
+│   │   │   ├── C1234567890_2024-01-01.tsv
+│   │   │   └── C1234567890_2024-01-02.tsv
+│   │   └── 02/
+│   └── 2025/
+└── G0987654321/                    # 別のチャンネル
+```
+
+### 実行モードの設計
+
+システムは効率的な運用のため、2つのモードで動作します：
+
+#### 初回実行モード
+- チャンネルのアーカイブファイルが存在しない場合に検出
+- チャンネル履歴全体を取得してアーカイブを開始
+
+#### 日次実行モード
+- 既存のアーカイブがある場合
+- 前日のメッセージのみを取得（00:00:00から23:59:59 JST）
+
+モード判定は過去365日間のアーカイブファイル存在チェックによって行われます。
+
+```typescript
+// src/services/execution-mode.ts での実装例
+export class ExecutionModeDetector {
+  async detectChannelMode(
+    channelId: string,
+    timezone: string,
+  ): Promise<ArchiveExecutionMode> {
+    // 過去365日間のアーカイブファイルをチェック
+    const hasExistingArchives = await this.checkExistingArchives(channelId);
+    
+    if (hasExistingArchives) {
+      // 前日の日付範囲を計算
+      const dateRange = calculatePreviousDayRange(timezone);
+      return { type: 'daily', channelId, dateRange };
+    } else {
+      return { type: 'initial', channelId };
+    }
+  }
+}
+```
+
+## TSVフォーマットの設計
+
+### フォーマット選定の経緯
+
+当初はJSONフォーマットでの保存を検討していました。JSONはSlack APIのレスポンス形式と一致するため、データの変換が不要で実装が簡単になると考えていました。しかし、運用面での要件を検討した結果、TSVフォーマットを選択しました。
+
+#### JSONフォーマットの課題
+
+```json
+{
+  "ts": "1704067200.123456",
+  "user": "U1234567890",
+  "text": "GitHub Actionsでのアーカイブシステムについて議論しましょう",
+  "thread_ts": null,
+  "replies": []
+}
+```
+
+JSONフォーマットには以下の課題がありました：
+
+- **ファイルサイズの肥大化**: メタデータやネストした構造により、実際のメッセージ内容に対してファイルサイズが大きくなる
+- **検索・分析の複雑さ**: grep、awk、sedなどの標準的なUnixツールでの検索が困難
+- **表計算ソフトでの扱いにくさ**: ExcelやGoogle Sheetsでの直接読み込みができない
+- **差分確認の困難さ**: GitのdiffでJSONの構造変化を追いにくい
+
+#### TSVフォーマットの利点
+
+最終的にTSVフォーマットを選択した理由：
+
+- **軽量性**: メッセージ内容のみに焦点を当て、不要なメタデータを除外
+- **検索性**: `grep`、`awk`、`cut`などの標準ツールで簡単に検索・分析可能
+- **互換性**: 表計算ソフトやデータ分析ツールで直接読み込み可能
+- **可読性**: テキストエディタで直接内容を確認でき、Git差分も見やすい
+- **処理速度**: シンプルな構造により高速な読み書きが可能
+
+```bash
+# TSVファイルでの簡単な検索例
+grep "GitHub Actions" archives/C034RPY14BX/2024/05/*.tsv
+awk -F'\t' '$3=="tomokisun" {print $4}' archives/C034RPY14BX/2024/05/C034RPY14BX_2024-05-01.tsv
+```
+
+### カラム構成
+
+各TSVファイルには以下のカラムが含まれます：
+
+| カラム名 | 説明 |
+|---------|------|
+| timestamp | メッセージのUnixタイムスタンプ（例: 1704067200.123456） |
+| user_id | 投稿者のユーザーID（例: U1234567890） |
+| user_name | 投稿者の表示名（display_name > name の優先順位） |
+| text | メッセージ本文（改行・タブはエスケープ） |
+| thread_ts | スレッドのタイムスタンプ（スレッドの場合） |
+| reply_count | 返信数（スレッドの親メッセージの場合） |
+
+### エスケープ処理
+
+TSVファイルの整合性を保つため、以下のエスケープ処理を実装しています：
+
+```typescript
+// src/services/tsv-writer.ts
+function escapeText(text: string): string {
+  return text
+    .replace(/\n/g, '\\n')    // 改行
+    .replace(/\t/g, '\\t')    // タブ
+    .replace(/\r/g, '\\r');   // キャリッジリターン
+}
+```
+
+## Slack API連携の実装
+
+### 必要なスコープ
+
+Slack Bot Tokenには以下のスコープが必要です：
+
+- `channels:history`: パブリックチャンネルの履歴を読む
+- `groups:history`: プライベートチャンネルの履歴を読む
+- `users:read`: ユーザー情報を読む
+
+### レート制限対応
+
+Slack APIのレート制限に対応するため、以下の戦略を実装しています：
+
+```typescript
+// src/services/slack-client.ts
+export class SlackClient {
+  private async withRetry<T>(
+    operation: () => Promise<T>,
+    maxRetries: number = 3,
+    baseDelay: number = 1000,
+  ): Promise<T> {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        await this.delay(this.minRequestInterval); // 最小間隔の確保
+        return await operation();
+      } catch (error) {
+        if (this.isRateLimitError(error) && attempt < maxRetries) {
+          const delay = baseDelay * Math.pow(2, attempt - 1); // エクスポネンシャルバックオフ
+          await this.delay(delay);
+          continue;
+        }
+        throw error;
+      }
+    }
+  }
+}
+```
+
+### ユーザー情報のキャッシング
+
+同一実行内でのAPIコール数を最適化するため、ユーザー情報をキャッシングしています：
+
+```typescript
+// src/services/user-fetcher.ts
+export class UserFetcher {
+  private userCache = new Map<string, SlackUser>();
+
+  async getUser(userId: string): Promise<SlackUser> {
+    if (this.userCache.has(userId)) {
+      return this.userCache.get(userId)!;
+    }
+
+    const user = await this.fetchUserFromAPI(userId);
+    this.userCache.set(userId, user);
+    return user;
+  }
+}
+```
+
+## GitHub Actions設定
+
+### ワークフロー構成
+
+```yaml
+# .github/workflows/archive.yml
+name: Archive Slack Messages
+
+on:
+  schedule:
+    # Run at 00:00 JST (15:00 UTC) every day
+    - cron: '0 15 * * *'
+  workflow_dispatch:
+    # Allow manual trigger for testing
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      channels: ${{ steps.set-channels.outputs.channels }}
+    steps:
+      - name: Set up channel matrix
+        run: |
+          channels_json=$(yq -o=json -I=0 '.channels' .github/slack-channels.yml | jq -c .)
+          echo "channels=$channels_json" >> $GITHUB_OUTPUT
+
+  archive:
+    needs: prepare
+    strategy:
+      matrix:
+        channel: ${{ fromJson(needs.prepare.outputs.channels) }}
+      max-parallel: 5 # レート制限対策
+    steps:
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      
+      - name: Run archive script
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 60
+          max_attempts: 3
+          command: bun run src/index.ts
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_CHANNEL: ${{ matrix.channel }}
+```
+
+### チャンネル設定
+
+アーカイブするチャンネルは `.github/slack-channels.yml` で管理しています：
+
+```yaml
+# .github/slack-channels.yml
+channels:
+  - C034RPY14BX # general
+  - C03V8SFC005 # history
+  - C06UNC9G2HW # surf
+  - C08C4CVA1J4 # ｼｭｯｼｬﾌﾞ
+  - C08GY86P1TQ # ﾆｯﾎﾟｳ
+```
+
+### 並列実行とエラーハンドリング
+
+```yaml
+strategy:
+  fail-fast: false # 1つが失敗しても他を継続
+  matrix:
+    channel: ${{ fromJson(needs.prepare.outputs.channels) }}
+  max-parallel: 5 # レート制限対策
+
+continue-on-error: true # 個別チャンネルの失敗を許容
+```
+
+## パフォーマンス最適化
+
+### 1. 並列処理
+
+チャンネルごとに独立したGitHub Actionsジョブとして並列実行することで、処理時間を大幅に短縮しています。
+
+### 2. Bunランタイムの活用
+
+BunはNode.jsより高速なJavaScriptランタイムで、特にファイルI/Oや起動時間において優位性があります。
+
+### 3. 最小API呼び出し
+
+- 日次実行モードでは前日分のみを取得
+- ユーザー情報のキャッシング
+- バッチ処理でスレッドの返信を効率的に取得
+
+### 4. ファイルI/O最適化
+
+```typescript
+// src/utils/file-system.ts
+export async function writeFileAtomically(
+  filePath: string,
+  content: string,
+): Promise<void> {
+  const tempPath = `${filePath}.tmp`;
+  await Bun.write(tempPath, content);
+  await fs.rename(tempPath, filePath); // アトミックな書き込み
+}
+```
+
+## 運用における工夫
+
+### リトライ戦略
+
+3層のリトライ戦略を実装しています：
+
+1. **API レベル**: 個別のAPIコールに対するリトライ
+2. **スクリプトレベル**: スクリプト全体の実行リトライ
+3. **ワークフローレベル**: GitHub Actionsジョブのリトライ
+
+### エラー通知
+
+GitHub Actionsの標準機能を活用してエラー通知を設定できます：
+
+```yaml
+- name: Notify on failure
+  if: failure()
+  uses: actions/upload-artifact@v4
+  with:
+    name: slack-archives-${{ matrix.channel }}-${{ github.run_id }}
+    path: archives/${{ matrix.channel }}/
+    retention-days: 7
+```
+
+### セキュリティ対策
+
+- Bot TokenはGitHub Secretsで管理
+- 最小権限の原則（必要なスコープのみ）
+- プライベートチャンネルは組織ポリシーに従って設定
+
+## 実際の運用結果
+
+### パフォーマンス指標
+
+- **1チャンネルあたりの処理時間**: 平均30秒-1分（日次モード）
+- **並列実行**: 最大5チャンネル同時処理
+- **ファイルサイズ**: 1日あたり平均10-50KB/チャンネル
+
+### 取得データの例
+
+```tsv
+timestamp	user_id	user_name	text	thread_ts	reply_count
+1704067200.123456	U1234567890	tomokisun	GitHub Actionsでのアーカイブシステムについて議論しましょう		3
+1704067260.789012	U0987654321	satopon	TypeScriptで実装する予定ですか？	1704067200.123456	0
+1704067320.456789	U1234567890	tomokisun	はい、型安全性を重視してTypeScriptで進める予定です	1704067200.123456	0
+```
+
+## まとめ
+
+GitHub ActionsとBunランタイムを活用したSlackアーカイブシステムにより、以下の効果を得ることができました：
+
+- **運用の自動化**: 確実なデータ保存を実現
+- **高いパフォーマンス**: 並列処理とBunランタイムにより高速な処理を実現
+- **スケーラビリティ**: 新しいチャンネルの追加も設定ファイルの変更のみで対応可能
+- **堅牢性**: 多層的なリトライ戦略とエラーハンドリングで安定した運用を実現
+
+このシステムは、特に開発チームやコミュニティにおける知識の蓄積と検索性の向上に大きく貢献しています。TSVフォーマットでの保存により、後から様々な分析ツールでの活用も可能になっています。
