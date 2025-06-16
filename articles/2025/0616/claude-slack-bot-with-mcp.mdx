@@ -9,6 +9,8 @@ author: "tomokisun"
 
 特筆すべきは、GitHub Actionsを使用することで、Claude Code SDKとMCPの実行環境を**ゼロから構築する必要がない**ことです。MCPサーバーのプロセス管理、標準入出力の制御、複数ツールの同時実行など、サーバーレス環境では実装が困難な機能を、GitHub Actionsが提供する環境で簡単に実現できます。本記事では、その設計と実装について詳しく解説します。
 
+<img src="/assets/2025/0616/claude-slack-bot-with-mcp/example.png" alt="スクリーンショット" />
+
 ## アーキテクチャ概要
 
 ### 分散処理の仕組み
