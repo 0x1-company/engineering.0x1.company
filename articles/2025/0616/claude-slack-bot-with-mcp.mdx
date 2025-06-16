@@ -2,7 +2,7 @@
 title: "分散アーキテクチャで実現するClaude Slack Bot - MCP統合とGitHub Actions連携"
 description: "Cloudflare WorkersとGitHub Actionsを組み合わせた分散アーキテクチャで、MCPツールを活用するClaude Code SDKを用いたAIボットの実装"
 date: "2025-06-16"
-author: tomokisun
+author: "tomokisun"
 ---
 
 わたしたちは、SlackでClaude Codeと対話できるボットを開発しました。このボットは、Cloudflare Workersのサイズ制限を回避するために分散アーキテクチャを採用し、MCP（Model Context Protocol）を通じてNotion、GitHub、Google Driveといった外部サービスと連携します。
@@ -209,21 +209,21 @@ jobs:
             .github
           sparse-checkout-cone-mode: false
 
-      - name: Prepare MCP configuration
+      - name: Prepare MCP configuration  # MCPサーバーの設定ファイルを動的生成
         run: .github/scripts/prepare-mcp-config.sh
         env:
-          NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}  # Notion APIキー
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}  # Slack Botトークン
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}  # GitHubアクセストークン
 
-      - name: Run Claude Code with MCP
+      - name: Run Claude Code with MCP  # Claude Code SDKでMCPツールを使ってAI処理を実行
         uses: anthropics/claude-code-base-action@beta
         with:
-          timeout_minutes: 30
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          mcp_config: "mcp-config.json"
-          system_prompt: ${{ github.event.inputs.system_prompt }}
-          allowed_tools: "${{ github.event.inputs.mcp_tools }},Bash,Grep,Glob,Read,Write,Edit,MultiEdit,LS,Task,TodoRead,TodoWrite,WebSearch,WebFetch"
+          timeout_minutes: 30  # タイムアウト設定（分）
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}  # Anthropic APIキー
+          mcp_config: "mcp-config.json"  # MCPサーバー設定ファイル
+          system_prompt: ${{ github.event.inputs.system_prompt }}  # システムプロンプト
+          allowed_tools: "${{ github.event.inputs.mcp_tools }},Bash,Grep,Glob,Read,Write,Edit,MultiEdit,LS,Task,TodoRead,TodoWrite,WebSearch,WebFetch"  # 使用許可ツール一覧
           prompt: |
             ${{ github.event.inputs.question }}
 
@@ -243,26 +243,26 @@ MCPサーバーの設定を環境変数から動的に生成：
 cat > mcp-config.json << EOF
 {
   "mcpServers": {
-    "notionApi": {
+    "notionApi": {  // Notionデータベースとページへのアクセス
       "command": "npx",
       "args": ["-y", "@notionhq/notion-mcp-server"],
       "env": {
-        "OPENAPI_MCP_HEADERS": "{\"Authorization\": \"Bearer ${NOTION_API_KEY}\", \"Notion-Version\": \"2022-06-28\" }"
+        "OPENAPI_MCP_HEADERS": "{\"Authorization\": \"Bearer ${NOTION_API_KEY}\", \"Notion-Version\": \"2022-06-28\" }"  // Notion APIキーとバージョン指定
       }
     },
-    "slack": {
+    "slack": {  // Slackチャンネルへのメッセージ投稿
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-slack"],
       "env": {
-        "SLACK_BOT_TOKEN": "${SLACK_BOT_TOKEN}",
-        "SLACK_TEAM_ID": "T034ULXCLJE"
+        "SLACK_BOT_TOKEN": "${SLACK_BOT_TOKEN}",  // Slack Botトークン
+        "SLACK_TEAM_ID": "${SLACK_TEAM_ID}"  // Slackワークスペースの組織ID
       }
     },
-    "github": {
+    "github": {  // GitHubリポジトリへのアクセス
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-github"],
       "env": {
-        "GITHUB_TOKEN": "${GH_TOKEN}"
+        "GITHUB_TOKEN": "${GH_TOKEN}"  // GitHub Personal Access Token
       }
     },
   }
@@ -373,6 +373,6 @@ User: TypeScriptで型安全にしたいです
 3. **拡張性**: 新しいMCPツールの追加が容易
 4. **知識共有**: SlackでAIの活用方法が公開され、メンバー同士のノウハウ共有を促進
 
-このアーキテクチャの最大の価値は、**GitHub Actionsという既存のインフラを活用することで、複雑なMCP実行環境の構築を避けられた**ことです。もしこれをゼロから実装しようとすると、プロセス管理、stdio通信、並行処理などの実装に多大な工数がかかり、サーバーレス環境でしょう。
+このアーキテクチャの最大の価値は、**GitHub Actionsという既存のインフラを活用することで、複雑なMCP実行環境の構築を避けられた**ことです。もしこれをゼロから実装しようとすると、プロセス管理、stdio通信、並行処理などの実装に多大な工数がかかり、サーバーレス環境では実現困難でしょう。
 
 GitHub ActionsとCloudflare Workersを組み合わせることで、それぞれの強みを活かした実用的なClaude Code SDKを用いたAIボットを実現できました！
