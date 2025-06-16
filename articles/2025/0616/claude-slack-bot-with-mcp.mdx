@@ -1,0 +1,378 @@
+---
+title: "分散アーキテクチャで実現するClaude Slack Bot - MCP統合とGitHub Actions連携"
+description: "Cloudflare WorkersとGitHub Actionsを組み合わせた分散アーキテクチャで、MCPツールを活用するClaude Code SDKを用いたAIボットの実装"
+date: "2025-06-16"
+author: tomokisun
+---
+
+わたしたちは、SlackでClaude Codeと対話できるボットを開発しました。このボットは、Cloudflare Workersのサイズ制限を回避するために分散アーキテクチャを採用し、MCP（Model Context Protocol）を通じてNotion、GitHub、Google Driveといった外部サービスと連携します。
+
+特筆すべきは、GitHub Actionsを使用することで、Claude Code SDKとMCPの実行環境を**ゼロから構築する必要がない**ことです。MCPサーバーのプロセス管理、標準入出力の制御、複数ツールの同時実行など、サーバーレス環境では実装が困難な機能を、GitHub Actionsが提供する環境で簡単に実現できます。本記事では、その設計と実装について詳しく解説します。
+
+## アーキテクチャ概要
+
+### 分散処理の仕組み
+
+システムは3つの主要コンポーネントで構成されています：
+
+1. **Cloudflare Worker**: Slackイベントの受信と初期応答
+2. **GitHub Actions**: Claude Codeの実行とMCPツール処理
+3. **Slack MCP**: GitHub ActionsからSlackへの直接メッセージ投稿
+
+```
+[Slack] → [Cloudflare Worker] → [GitHub Actions + Claude Code SDK]
+   ↑                                    ↓
+   └────────────────────────────────────┘
+        (Slack MCPによる直接更新)
+```
+
+### 技術スタック
+
+- **Cloudflare Worker**: Hono + TypeScript + Zod
+- **GitHub Actions**: Claude Code SDK (@anthropic-ai/claude-code)
+- **ストレージ**: Cloudflare KV（スレッドコンテキストキャッシュ）
+- **MCPサーバー**: 公式MCPサーバー（@modelcontextprotocol/server-*）
+
+## Cloudflare Worker実装
+
+### エントリーポイント
+
+```typescript
+// src/index.ts
+import { OpenAPIHono } from "@hono/zod-openapi";
+import { cors } from "hono/cors";
+import { logger } from "hono/logger";
+import { secureHeaders } from "hono/secure-headers";
+import { requestId } from "hono/request-id";
+
+import { slackRoutes } from "./routes/slack";
+import { healthRoutes } from "./routes/health";
+import { docsRoutes } from "./routes/docs";
+import type { Env } from "./types/env";
+
+const app = new OpenAPIHono<{ Bindings: Env }>();
+
+// グローバルミドルウェア
+app.use("*", requestId());
+app.use("*", logger());
+app.use("*", secureHeaders());
+app.use("*", cors({
+  origin: (origin) => origin,
+  credentials: true,
+}));
+
+// ルートマウント
+app.route("/", slackRoutes);
+app.route("/", healthRoutes);
+app.route("/", docsRoutes);
+```
+
+### Slack署名検証ミドルウェア
+
+セキュリティのため、Slackからのリクエストは署名検証を実装しています：
+
+```typescript
+// src/middleware/auth.ts
+export const verifySlackSignature: MiddlewareHandler = async (c, next) => {
+  const signature = c.req.header("x-slack-signature");
+  const timestamp = c.req.header("x-slack-request-timestamp");
+  
+  if (!signature || !timestamp) {
+    throw createError.slackAuthError("署名またはタイムスタンプがありません");
+  }
+
+  // タイムスタンプの検証（5分以内）
+  const currentTime = Math.floor(Date.now() / 1000);
+  if (Math.abs(currentTime - parseInt(timestamp)) > 300) {
+    throw createError.slackAuthError("リクエストが古すぎます");
+  }
+
+  // HMAC-SHA256による署名検証
+  const sigBasestring = `v0:${timestamp}:${rawBody}`;
+  const mySignature = await generateHmacSignature(
+    sigBasestring,
+    c.env.SLACK_SIGNING_SECRET,
+  );
+  
+  if (!verifySignatures(signature, mySignature)) {
+    throw createError.slackAuthError("署名の検証に失敗しました");
+  }
+};
+```
+
+## GitHub Actions連携
+
+### ワークフローディスパッチ
+
+Cloudflare WorkerからGitHub Actionsにタスクを委譲する実装：
+
+```typescript
+// src/services/github-dispatcher.ts
+export class GitHubDispatcher {
+  async dispatch(params: DispatchParams): Promise<void> {
+    // MCPツールを質問内容に基づいて決定
+    const mcpTools = this.determineMCPTools(params.question);
+    
+    // GitHub Actionsワークフローへのペイロード
+    const payload = {
+      ref: "main",
+      inputs: {
+        question: params.question,
+        mcp_tools: mcpTools.join(","),
+        slack_channel: params.slackChannel,
+        slack_ts: params.slackTs,
+        slack_thread_ts: params.slackThreadTs || "",
+        system_prompt: this.generateSystemPrompt(
+          params.threadContext,
+          params.customInstructions,
+        ),
+      },
+    };
+
+    const url = `https://api.github.com/repos/${this.env.GITHUB_OWNER}/${this.env.GITHUB_REPO}/actions/workflows/${this.env.GITHUB_WORKFLOW_FILE}/dispatches`;
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${this.env.GITHUB_TOKEN}`,
+        Accept: "application/vnd.github.v3+json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+  }
+}
+```
+
+## GitHub Actionsワークフロー
+
+### GitHub Actions採用の決定的な利点
+
+GitHub Actionsを採用した最大の理由は、**MCPの実行環境を自作する必要がない**ことです。MCPサーバーを動作させるには以下の要件があります：
+
+1. **プロセス管理**: 複数のMCPサーバープロセスの起動と終了
+2. **標準入出力の制御**: 各サーバーとのstdio通信
+3. **並行処理**: 複数のツールの同時実行
+4. **長時間実行**: タイムアウトなしでの処理継続
+
+これらをサーバーレス環境で実装するのは非常に困難ですが、GitHub Actionsの環境では標準的なNode.js環境として簡単に実現できます。
+
+### claude-code-base-actionの採用理由
+
+重要な技術的選択として、`anthropics/claude-code-action`ではなく`anthropics/claude-code-base-action@beta`を使用しています。これは、**claude-code-actionがworkflow_dispatchからの呼び出しに対応していない**ためです。
+
+claude-code-base-actionを使用することで、外部API（今回はCloudflare Worker）からworkflow_dispatchを通じてGitHub Actionsを起動し、Claude Codeを実行できます。これにより、Slackイベントをトリガーとした非同期処理が可能になります。
+
+Claude Codeを実行するワークフロー設定：
+
+```yaml
+# .github/workflows/claude-code-processor.yml
+name: Claude Code Processor
+
+on:
+  workflow_dispatch:
+    inputs:
+      question:
+        description: 'User question from Slack'
+        required: true
+        type: string
+      mcp_tools:
+        description: 'MCP tools to allow (comma-separated)'
+        required: false
+        type: string
+      slack_channel:
+        description: 'Slack channel ID'
+        required: true
+        type: string
+      slack_ts:
+        description: 'Slack message timestamp'
+        required: true
+        type: string
+      slack_thread_ts:
+        description: 'Slack thread timestamp (if in thread)'
+        required: false
+        type: string
+      system_prompt:
+        description: 'System prompt for Claude'
+        required: true
+        type: string
+
+jobs:
+  process-with-claude:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository (sparse)
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            .github
+          sparse-checkout-cone-mode: false
+
+      - name: Prepare MCP configuration
+        run: .github/scripts/prepare-mcp-config.sh
+        env:
+          NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+
+      - name: Run Claude Code with MCP
+        uses: anthropics/claude-code-base-action@beta
+        with:
+          timeout_minutes: 30
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          mcp_config: "mcp-config.json"
+          system_prompt: ${{ github.event.inputs.system_prompt }}
+          allowed_tools: "${{ github.event.inputs.mcp_tools }},Bash,Grep,Glob,Read,Write,Edit,MultiEdit,LS,Task,TodoRead,TodoWrite,WebSearch,WebFetch"
+          prompt: |
+            ${{ github.event.inputs.question }}
+
+            すべての処理が終わったら、Slack MCPツール（mcp__slack__chat_update）を使って以下のメッセージを更新してください：
+            - channel: ${{ github.event.inputs.slack_channel }}
+            - ts: ${{ github.event.inputs.slack_ts }}
+```
+
+## MCP設定の動的生成
+
+MCPサーバーの設定を環境変数から動的に生成：
+
+```bash
+#!/bin/bash
+# .github/scripts/prepare-mcp-config.sh
+
+cat > mcp-config.json << EOF
+{
+  "mcpServers": {
+    "notionApi": {
+      "command": "npx",
+      "args": ["-y", "@notionhq/notion-mcp-server"],
+      "env": {
+        "OPENAPI_MCP_HEADERS": "{\"Authorization\": \"Bearer ${NOTION_API_KEY}\", \"Notion-Version\": \"2022-06-28\" }"
+      }
+    },
+    "slack": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-slack"],
+      "env": {
+        "SLACK_BOT_TOKEN": "${SLACK_BOT_TOKEN}",
+        "SLACK_TEAM_ID": "T034ULXCLJE"
+      }
+    },
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_TOKEN": "${GH_TOKEN}"
+      }
+    },
+  }
+}
+EOF
+```
+
+## スレッドコンテキストの実装
+
+Slackスレッド内の会話履歴を取得し、コンテキストとして提供：
+
+```typescript
+// src/services/slack-client.ts
+export class SlackClient {
+  async getThreadContext(
+    channel: string,
+    threadTs: string,
+    maxMessages: number = 50,
+  ): Promise<ThreadContext> {
+    const result = await this.client.conversations.replies({
+      channel,
+      ts: threadTs,
+      limit: maxMessages,
+    });
+
+    if (!result.ok || !result.messages) {
+      throw createError.slackApiError("conversations.replies", result.error);
+    }
+
+    // ユーザー情報を取得してメッセージを整形
+    const messages = await Promise.all(
+      result.messages.map(async (msg) => {
+        const user = await this.getUserInfo(msg.user || "");
+        return {
+          text: msg.text || "",
+          user: user?.real_name || user?.name || "Unknown",
+          ts: msg.ts || "",
+          isBot: msg.bot_id !== undefined,
+        };
+      }),
+    );
+
+    return { messages };
+  }
+}
+```
+
+## 非同期処理による高速レスポンス
+
+Slackの3秒タイムアウトに対応するため、即座に応答し、バックグラウンドで処理：
+
+```typescript
+// src/services/event-handler.ts
+export class EventHandler {
+  async handleAppMention(event: AppMentionEvent): Promise<void> {
+    // 即座に「考えています...」と応答
+    const initialResponse = await this.slackClient.postMessage({
+      channel: event.channel,
+      text: ":thinking_face: 考えています...",
+      thread_ts: event.thread_ts || event.ts,
+    });
+
+    // GitHub Actionsにディスパッチ（非同期）
+    await this.githubDispatcher.dispatch({
+      question,
+      threadContext,
+      customInstructions,
+      slackChannel: event.channel,
+      slackTs: initialResponse.ts!,
+      slackThreadTs: event.thread_ts || event.ts,
+      workspaceUrl: this.env.SLACK_WORKSPACE_URL,
+    });
+  }
+}
+```
+
+## 実際の使用例
+
+### 基本的な使い方
+
+```
+@claude
+
+この議事録の内容を要約して、Slackに投稿して
+https://notion.so/xxxxx
+```
+
+ボットは自動的にNotion MCPツールを有効化し、ドキュメントを検索します。
+
+### スレッドコンテキスト
+
+スレッド内での会話：
+
+```
+User: 新機能の実装について議論しましょう
+User: TypeScriptで型安全にしたいです
+@claude この実装にはどのようなパターンが適していますか？
+```
+
+ボットはスレッド全体のコンテキストを理解して応答します。
+
+## まとめ
+
+分散アーキテクチャを採用することで、Cloudflare Workersのサイズ制限を回避しながら、高度なAI機能とMCP統合を実現しました。主な成果は以下の通りです：
+
+1. **高度な統合**: MCP経由でNotion、GitHub、Google Driveと連携
+2. **開発効率**: GitHub Actionsの既存環境を活用し、MCPランタイムの自作を回避
+3. **拡張性**: 新しいMCPツールの追加が容易
+4. **知識共有**: SlackでAIの活用方法が公開され、メンバー同士のノウハウ共有を促進
+
+このアーキテクチャの最大の価値は、**GitHub Actionsという既存のインフラを活用することで、複雑なMCP実行環境の構築を避けられた**ことです。もしこれをゼロから実装しようとすると、プロセス管理、stdio通信、並行処理などの実装に多大な工数がかかり、サーバーレス環境でしょう。
+
+GitHub ActionsとCloudflare Workersを組み合わせることで、それぞれの強みを活かした実用的なClaude Code SDKを用いたAIボットを実現できました！
