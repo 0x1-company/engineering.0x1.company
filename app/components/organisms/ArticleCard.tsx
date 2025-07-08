@@ -18,18 +18,20 @@ function ArticleCardComponent(props: ArticleCardProps) {
   const ogpPath = `/ogps/${article.entryName}.png`
 
   return (
-    <article className={`group bg-white border border-gray-100 hover:border-gray-300 rounded-xl overflow-hidden transition-all duration-300 h-full flex flex-col hover:shadow-lg hover:-translate-y-1 ${className}`}>
+    <article className={`group bg-white border border-gray-200/60 rounded-2xl overflow-hidden transition-all duration-300 h-full flex flex-col hover:border-gray-300 hover:shadow-2xl hover:-translate-y-2 ${className}`}>
       <Link 
         href={`/articles/${article.entryName}`} 
         className="flex flex-col h-full"
       >
-        <ArticleImage 
-          src={ogpPath}
-          alt={article.frontmatter.title}
-          priority={priority}
-        />
+        <div className="relative aspect-[1200/630] overflow-hidden bg-gradient-to-br from-slate-100 to-slate-200">
+          <ArticleImage 
+            src={ogpPath}
+            alt={article.frontmatter.title}
+            priority={priority}
+          />
+        </div>
         
-        <div className="p-6 flex flex-col flex-grow">
+        <div className="p-6 md:p-8 flex flex-col flex-grow">
           <ArticleTitle 
             title={article.frontmatter.title}
             variant="card"
@@ -40,7 +42,7 @@ function ArticleCardComponent(props: ArticleCardProps) {
             variant="card"
           />
           
-          <div className="mt-6 flex justify-between items-center">
+          <div className="mt-auto pt-6 flex justify-between items-center border-t border-gray-100">
             <ArticleDate date={article.frontmatter.date} />
             <ReadMoreLink />
           </div>

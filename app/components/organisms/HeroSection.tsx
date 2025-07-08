@@ -1,31 +1,35 @@
-import { Text, Badge } from '../atoms'
+import { Text } from '../atoms'
 
-export function HeroSection() {
+interface HeroSectionProps {
+  title?: string;
+  description?: string;
+}
+
+export function HeroSection({ 
+  title = 'ONE Engineering',
+  description = 'わたしたちの技術的な挑戦と発見を共有します。'
+}: HeroSectionProps = {}) {
   return (
-    <section className="relative bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white">
-      <div className="absolute inset-0 bg-grid-white/[0.05] bg-[size:50px_50px]" />
-      <div className="relative container mx-auto px-4 py-24 md:py-32 lg:py-40 max-w-screen-xl">
-        <div className="max-w-3xl">
-          <Text as="h1" className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 tracking-tight text-white">
-            ONE Engineering
-          </Text>
-          <Text as="p" className="text-xl md:text-2xl text-white mb-8 leading-relaxed">
-            わたしたちの技術的な挑戦と発見を共有します。
-            モバイルアプリ開発、クラウドインフラ、そして最新技術の活用について。
-          </Text>
-          <div className="flex flex-wrap gap-4">
-            <Badge variant="success" className="flex items-center gap-2 bg-green-600/80 text-green-100 border border-green-500">
-              <span className="w-2 h-2 bg-green-300 rounded-full animate-pulse" />
-              iOS Development
-            </Badge>
-            <Badge variant="info" className="flex items-center gap-2 bg-blue-600/80 text-blue-100 border border-blue-500">
-              <span className="w-2 h-2 bg-blue-300 rounded-full animate-pulse" />
-              Cloud Infrastructure
-            </Badge>
-            <Badge variant="default" className="flex items-center gap-2 bg-purple-600/80 text-purple-100 border border-purple-500">
-              <span className="w-2 h-2 bg-purple-300 rounded-full animate-pulse" />
-              System Architecture
-            </Badge>
+    <section className="relative overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white">
+      <div className="absolute inset-0 bg-grid-white/[0.03] bg-[size:30px_30px]" />
+      <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent" />
+      <div className="relative container mx-auto px-4 py-28 md:py-36 lg:py-44 max-w-screen-xl">
+        <div className="max-w-4xl">
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <Text as="h1" className="text-5xl md:text-6xl lg:text-7xl font-bold mb-8 tracking-tight text-white bg-gradient-to-r from-white via-blue-100 to-white bg-clip-text text-transparent">
+              {title}
+            </Text>
+          </div>
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200">
+            <Text as="p" className="text-xl md:text-2xl lg:text-3xl text-slate-200 leading-relaxed max-w-3xl font-light">
+              {description}
+              {title === 'ONE Engineering' && (
+                <>
+                  <br className="hidden md:block" />
+                  モバイルアプリ開発、システムアーキテクチャ、そして最新技術の活用について。
+                </>
+              )}
+            </Text>
           </div>
         </div>
       </div>

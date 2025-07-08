@@ -70,10 +70,6 @@ export function Footer() {
           />
         </div>
         
-        <div className="text-center my-6 text-sm text-gray-500 italic">
-          <Text>このサイトのコーディングはAIが98%行っています</Text>
-        </div>
-        
         <div className="text-right text-sm text-gray-600">
           <Text>{`ONE株式会社 © ${year} ONE, Inc.`}</Text>
         </div>
