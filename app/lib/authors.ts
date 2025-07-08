@@ -5,6 +5,25 @@ import type { Author } from '../types';
  */
 
 /**
+ * 著者データ（idを除いたAuthor型）
+ */
+export const authorsData: Record<string, Omit<Author, 'id'>> = {
+  tomokisun: {
+    name: 'tomokisun',
+    avatar: 'https://engineering.0x1.company/tomokisun.png',
+    bio: 'ONE株式会社 取締役',
+    position: '取締役',
+    company: 'ONE株式会社',
+    skills: ['Swift', 'TypeScript', 'Dart', 'React', 'Next.js', 'Ruby on Rails', 'Blockchain'],
+    social: {
+      twitter: 'https://twitter.com/tomokisun',
+      github: 'https://github.com/tomokisun',
+      zenn: 'https://zenn.dev/tomokisun',
+    },
+  },
+};
+
+/**
  * 簡易的な著者情報
  * @typedef {Object} SimpleAuthor
  * @property {string} name - 著者名
@@ -24,22 +43,19 @@ type Authors = {
 };
 
 /**
- * 利用可能な著者の一覧
+ * 利用可能な著者の一覧（後方互換性のため維持）
  * @type {Authors}
- * @example
- * // 新しい著者を追加する場合
- * authors['newauthor'] = {
- *   name: 'New Author',
- *   icon: 'https://example.com/avatar.png'
- * };
  */
-export const authors: Authors = {
-  tomokisun: {
-    name: 'tomokisun',
-    icon: 'https://engineering.0x1.company/tomokisun.png',
-  },
-  // Add more authors as needed
-};
+export const authors: Authors = Object.entries(authorsData).reduce(
+  (acc, [id, author]) => ({
+    ...acc,
+    [id]: {
+      name: author.name,
+      icon: author.avatar,
+    },
+  }),
+  {} as Authors
+);
 
 /**
  * 著者IDから著者情報を取得
@@ -72,23 +88,26 @@ export const getAuthor = (authorId?: string): SimpleAuthor => {
  * @param {string} authorId - 著者ID
  * @returns {Author} SNS情報を含む完全な著者情報
  * @description
- * - SimpleAuthorに加えてIDとSNS情報を含む
- * - tomokisunの場合はTwitterとGitHubのリンクを含む
+ * - 完全なAuthor型の情報を返す
+ * - 存在しない著者IDの場合はデフォルト値を返す
  * @example
  * const fullAuthor = getFullAuthor('tomokisun');
  * console.log(fullAuthor.social?.twitter); // 'https://twitter.com/tomokisun'
  */
 export const getFullAuthor = (authorId: string): Author => {
-  const simpleAuthor = getAuthor(authorId);
+  if (!authorsData[authorId]) {
+    // デフォルト値を返す
+    return {
+      id: authorId,
+      name: 'Anonymous',
+      avatar: 'https://engineering.0x1.company/tomokisun.png',
+      social: {},
+    };
+  }
   
   return {
     id: authorId,
-    name: simpleAuthor.name,
-    avatar: simpleAuthor.icon,
-    social: authorId === 'tomokisun' ? {
-      twitter: 'https://twitter.com/tomokisun',
-      github: 'https://github.com/tomokisun',
-    } : {},
+    ...authorsData[authorId],
   };
 };
 
@@ -102,5 +121,42 @@ export const getFullAuthor = (authorId: string): Author => {
  * }
  */
 export const isValidAuthor = (authorId: string): boolean => {
-  return authorId in authors;
+  return authorId in authorsData;
 };
+
+/**
+ * 著者の記事数を取得する関数
+ * @param {string} authorId - 著者ID
+ * @returns {Promise<number>} 記事数
+ */
+export async function getAuthorArticleCount(authorId: string): Promise<number> {
+  const { getArticles } = await import('./articles');
+  const articles = await getArticles();
+  return articles.filter(article => article.frontmatter.author === authorId).length;
+}
+
+/**
+ * 著者の記事を取得する関数
+ * @param {string} authorId - 著者ID
+ * @param {number} page - ページ番号（1から始まる）
+ * @param {number} limit - 1ページあたりの記事数
+ * @returns {Promise<{articles: Article[], total: number, page: number, totalPages: number}>}
+ */
+export async function getAuthorArticles(authorId: string, page = 1, limit = 10) {
+  const { getArticles } = await import('./articles');
+  const articles = await getArticles();
+  
+  const authorArticles = articles.filter(
+    article => article.frontmatter.author === authorId
+  );
+  
+  const start = (page - 1) * limit;
+  const end = start + limit;
+  
+  return {
+    articles: authorArticles.slice(start, end),
+    total: authorArticles.length,
+    page,
+    totalPages: Math.ceil(authorArticles.length / limit),
+  };
+}

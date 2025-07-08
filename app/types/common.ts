@@ -14,11 +14,22 @@ export interface Author {
   name: string;
   /** アバター画像のURL */
   avatar: string;
+  /** 一覧ページ用の短い紹介文（60文字程度） */
+  bio?: string;
+  /** 役職 */
+  position?: string;
+  /** 所属 */
+  company?: string;
+  /** スキル・専門分野 */
+  skills?: string[];
   /** SNSリンク */
   social: {
     twitter?: string;
     github?: string;
     linkedin?: string;
+    website?: string;
+    zenn?: string;
+    qiita?: string;
   };
 }
 

@@ -1,4 +1,6 @@
 export { HomeTemplate } from './HomeTemplate'
 export { PageLayout } from './PageLayout'
+export { AuthorDetailTemplate } from './AuthorDetailTemplate'
+export { AuthorsListTemplate } from './AuthorsListTemplate'
 export type { HomeTemplateProps } from './HomeTemplate'
 export type { PageLayoutProps } from './PageLayout'
